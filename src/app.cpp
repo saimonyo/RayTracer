@@ -1,44 +1,15 @@
-#include <GLFW/glfw3.h>
+#include "Window.h"
 
-int main(void)
-{
-    GLFWwindow* window;
+__host__ void render_frame(cudaGraphicsResource_t pbo_resource, int width, int height, int frame_number);
 
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
+// screen paramaters
+const int vp_width = 800;
+const int vp_height = 600;
+const int main_width = 1200;
+const int main_height = 600;
 
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
+int main(void) {
+    Window window = Window(vp_width, vp_height, main_width, main_height);
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glBegin(GL_TRIANGLES);
-        glVertex2f(-0.5f, -0.5f);
-        glVertex2f(0.0f, 0.5f);
-        glVertex2f(0.5f, -0.5f);
-
-        glEnd();
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
-    return 0;
+    window.main_loop(render_frame);
 }
