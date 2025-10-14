@@ -35,6 +35,8 @@
     <ClInclude Include="src\imgui\imstb_rectpack.h" />
     <ClInclude Include="src\imgui\imstb_textedit.h" />
     <ClInclude Include="src\imgui\imstb_truetype.h" />
+    <ClInclude Include="src\math\ray.cuh" />
+    <ClInclude Include="src\math\vec3.cuh" />
     <ClInclude Include="src\Window.h" />
   </ItemGroup>
   <ItemGroup>
