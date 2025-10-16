@@ -20,6 +20,8 @@ public:
     };
     __device__ virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
     __device__ virtual vec3 normal(vec3 point) const;
+    __device__ virtual float area() const;
+    __device__ virtual vec3 sample_random_point(curandState* local_rand_state) const;
 };
 
 __device__ bool Quad::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
@@ -28,4 +30,15 @@ __device__ bool Quad::hit(const ray& r, float t_min, float t_max, hit_record& re
 
 __device__ vec3 Quad::normal(vec3 point) const {
     return n;
+}
+
+__device__ float Quad::area() const {
+    return length(cross(e1, e2));
+}
+
+__device__ vec3 Quad::sample_random_point(curandState* local_rand_state) const {
+    float u = curand_uniform(local_rand_state);
+    float v = curand_uniform(local_rand_state);
+
+    return v1 + u * e1 + v * e2;
 }
