@@ -1,6 +1,9 @@
 #include "Window.h"
+#include <device_launch_parameters.h>
 
 static auto stationary_window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+
+int get_ray_count();
 
 bool Window::init_CUDA() {
     int device_id = -1;
@@ -17,6 +20,8 @@ bool Window::init_CUDA() {
     device_id = devices[0];
 
     checkCudaErrors(cudaGLSetGLDevice(device_id));
+
+    init_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 
     return true;
 }
@@ -115,7 +120,7 @@ bool Window::initialise() {
     return true;
 }
 
-Window::Window(const int vp_width, const int vp_height, const int mw_width, const int mw_height) 
+Window::Window(const int vp_width, const int vp_height, const int mw_width, const int mw_height)
     : VIEWPORT_WIDTH(vp_width), VIEWPORT_HEIGHT(vp_height), MAINWINDOW_WIDTH(mw_width), MAINWINDOW_HEIGHT(mw_height) {
     if (!initialise()) {
         exit(-1);
@@ -128,7 +133,7 @@ void Window::each_frame_pre_kernel() {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 }
 
-void Window::each_frame_post_kernel(int mrays_per_second, int rays_this_frame) {
+void Window::each_frame_post_kernel() {
     // copy data from pbo to texture
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -165,16 +170,20 @@ void Window::each_frame_post_kernel(int mrays_per_second, int rays_this_frame) {
         //
         // Statistics Table
         //
-     
+
         // calculate statistics every 0.1s
         //  - less flashy, easier to read
         double curr_time = glfwGetTime();
 
-        if (curr_time - last_update_time >= 0.1)
-        {
+        double delta = curr_time - last_update_time;
+
+        if (delta >= 0.1) {
             display_fps = ImGui::GetIO().Framerate;
             display_ms = ImGui::GetIO().DeltaTime * 1000.0f;
             last_update_time = curr_time;
+            int curr_ray_count = get_ray_count();
+            mrays = float((curr_ray_count - prev_ray_count)) / delta / 1'000'000.0f;
+            prev_ray_count = curr_ray_count;
         }
 
         ImGui::SetNextWindowSize(ImVec2(MAINWINDOW_WIDTH - VIEWPORT_WIDTH, 200));
@@ -185,7 +194,7 @@ void Window::each_frame_post_kernel(int mrays_per_second, int rays_this_frame) {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 
-        bool *isopen_stats = NULL;
+        bool* isopen_stats = NULL;
         ImGui::Begin("Render Statistics", isopen_stats, stationary_window_flags);
 
         ImGuiTableFlags table_flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp;
@@ -209,18 +218,18 @@ void Window::each_frame_post_kernel(int mrays_per_second, int rays_this_frame) {
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%.2f ms", display_ms);
 
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Accumulated Frames");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%d", ImGui::GetFrameCount());
+
 
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("Rays Per Second");
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%.2f MRays/s", mrays_per_second);
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("Rays Per Frame");
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", rays_this_frame);
+            ImGui::Text("%.2f MRays/s", mrays);
 
             ImGui::EndTable();
         }
@@ -242,7 +251,7 @@ void Window::main_loop(std::function<void(cudaGraphicsResource_t, int, int, int)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        each_frame_post_kernel(1, 2);
+        each_frame_post_kernel();
 
 
         ImGui::Render();
@@ -272,6 +281,6 @@ void Window::clean_up() {
     glfwTerminate();
 }
 
-Window::~Window(){
+Window::~Window() {
     clean_up();
 }

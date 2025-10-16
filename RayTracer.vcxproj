@@ -36,11 +36,22 @@
     <ClInclude Include="src\imgui\imstb_textedit.h" />
     <ClInclude Include="src\imgui\imstb_truetype.h" />
     <ClInclude Include="src\math\ray.cuh" />
+    <ClInclude Include="src\math\util.cuh" />
     <ClInclude Include="src\math\vec3.cuh" />
+    <ClInclude Include="src\renderer\render.cuh" />
+    <ClInclude Include="src\renderer\RenderKernel.cuh" />
+    <ClInclude Include="src\scene\Camera.cuh" />
+    <ClInclude Include="src\scene\Material.cuh" />
+    <ClInclude Include="src\scene\Quad.cuh" />
+    <ClInclude Include="src\scene\setup.cuh" />
+    <ClInclude Include="src\scene\Triangle.cuh" />
+    <ClInclude Include="src\scene\PrimitiveList.cuh" />
+    <ClInclude Include="src\scene\Primitive.cuh" />
+    <ClInclude Include="src\scene\Scene.cuh" />
     <ClInclude Include="src\Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\kernel.cu" />
+    <CudaCompile Include="src\renderer\RenderKernel.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{56188517-172E-45EB-B586-9F5122C71CE7}</ProjectGuid>

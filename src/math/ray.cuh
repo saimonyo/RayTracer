@@ -1,17 +1,28 @@
 #pragma once
 
-#include "vec3.cuh"
+#include "util.cuh"
+
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h> 
+#include <device_launch_parameters.h>
+
+extern __device__ int ray_count = 0;
+
+
+// returns the current value of ray_count
+// - needs to be in a wrapper to work
+int get_ray_count() {
+    int host_count = 0;
+    // Copy the value from the GPU variable (ray_count) to a CPU variable (host_count)
+    cudaMemcpyFromSymbol(&host_count, ray_count, sizeof(int));
+    return host_count;
+}
 
 class ray {
-    vec3 o;
-    vec3 d;
+public:
+    vec3 origin, direction;
 
-    ray(vec3 origin, vec3 direction) {
-        o = origin;
-        d = direction;
-    }
-
-    vec3 at_time(float t) {
-        return o + d * t;
-    }
+    __device__ ray() {}
+    __device__ ray(const vec3& o, const vec3& dir) : origin(o), direction(dir) { atomicAdd(&ray_count, 1); }
+    __device__ vec3 at(float t) const { return origin + t * direction; }
 };

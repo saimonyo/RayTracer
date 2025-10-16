@@ -1,7 +1,5 @@
 #include "Window.h"
 
-__host__ void render_frame(cudaGraphicsResource_t pbo_resource, int width, int height, int frame_number);
-
 // screen paramaters
 const int vp_width = 800;
 const int vp_height = 600;

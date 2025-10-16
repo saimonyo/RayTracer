@@ -1,17 +1,29 @@
 #pragma once
 
-#include "../cuda_helper.cuh"
-
 #include "assert.h"
 #include <math.h>
 #include <stdlib.h>
 #include <iostream>
 
+#ifndef F_PI
+#define F_PI 3.14159265358979323846f
+#endif
+
+constexpr float ONE_OVER_PI = 1.0f / F_PI;
+
+
 struct vec3 : public float3 {
+public:
+
     //
     // initialisation
     //
-    __host__ __device__ vec3(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) {
+
+    __host__ __device__ vec3() {
+        x = 0.0f; y = 0.0f; z = 0.0f;
+    }
+
+    __host__ __device__ vec3(float _x, float _y, float _z) {
         x = _x; y = _y; z = _z;
     }
 
@@ -144,11 +156,11 @@ __host__ __device__ inline vec3 operator/(float scalar, const vec3& v) {
 // vector vector operations
 //
 
-__host__ __device__ float dot(const vec3& left, const vec3& right) {
+__host__ __device__ inline float dot(const vec3& left, const vec3& right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
-__host__ __device__ vec3 cross(const vec3& left, const vec3& right) {
+__host__ __device__ inline vec3 cross(const vec3& left, const vec3& right) {
     return vec3(
         left.y * right.z - left.z * right.y,
         left.z * right.x - left.x * right.z,
@@ -156,7 +168,7 @@ __host__ __device__ vec3 cross(const vec3& left, const vec3& right) {
     );
 }
 
-__host__ __device__ vec3 min(const vec3& left, const vec3& right) {
+__host__ __device__ inline vec3 min(const vec3& left, const vec3& right) {
     return vec3(
         left.x < right.x ? left.x : right.x,
         left.y < right.y ? left.y : right.y,
@@ -164,7 +176,7 @@ __host__ __device__ vec3 min(const vec3& left, const vec3& right) {
     );
 }
 
-__host__ __device__ vec3 max(const vec3& left, const vec3& right) {
+__host__ __device__ inline vec3 max(const vec3& left, const vec3& right) {
     return vec3(
         left.x > right.x ? left.x : right.x,
         left.y > right.y ? left.y : right.y,
@@ -177,14 +189,34 @@ __host__ __device__ vec3 max(const vec3& left, const vec3& right) {
 // single vector operations
 //
 
-__host__ __device__ float length_squared(const vec3& v) {
+__host__ __device__ inline float length_squared(const vec3& v) {
     return dot(v, v);
 }
 
-__host__ __device__ float length(const vec3& v) {
+__host__ __device__ inline float length(const vec3& v) {
     return sqrtf(length_squared(v));
 }
 
-__host__ __device__ vec3 normalise(const vec3& v) {
+__host__ __device__ inline vec3 normalise(const vec3& v) {
     return v / length(v);
+}
+
+__host__ __device__ inline vec3 pow(const vec3& v, float e) {
+    return vec3(powf(v.x, e), powf(v.y, e), powf(v.z, e));
+}
+
+__host__ __device__ vec3 sqrt(const vec3& v) {
+    return vec3(sqrtf(v.x), sqrtf(v.y), sqrtf(v.z));
+}
+
+__host__ __device__ inline vec3 clamp(const vec3& v, float low, float high) {
+    return max(vec3(low), min(vec3(high), v));
+}
+
+__host__ __device__ float min_component(const vec3& v) {
+    return fminf(v.x, fminf(v.y, v.z));
+}
+
+__host__ __device__ float max_component(const vec3& v) {
+    return fmaxf(v.x, fmaxf(v.y, v.z));
 }
