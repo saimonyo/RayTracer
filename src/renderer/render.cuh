@@ -29,6 +29,16 @@ namespace Sample {
                 if (rec.mat_ptr->sample(rec, cur_ray, throughput, scattered, pdf, local_rand_state)) {
                     cur_ray = scattered;
                 }
+
+                // russian roulette
+                float p = max_component(throughput);
+
+                if (curand_uniform(local_rand_state) >= p) {
+                    break;
+                }
+
+                // need to reweight due to potential termination
+                throughput = throughput / p;
             }
             else {
                 break;
