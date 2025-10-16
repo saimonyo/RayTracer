@@ -52,7 +52,7 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
     PrimitiveList** prims = (*world)->primitives;
 
     ray r = (*cam)->get_ray(u, v, &local_rand_state);
-    vec3 new_sample = Sample::naive_monte_carlo(r, prims, &local_rand_state);
+    vec3 new_sample = Sample::NEE_monte_carlo(r, prims, &local_rand_state);
 
     // get old value in the buffer
     vec3 old_render = accum_buffer[pixel_index];

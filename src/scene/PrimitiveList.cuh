@@ -11,7 +11,7 @@ public:
     __device__ bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
     __host__ __device__ inline Primitive* operator[](int i) const { return list[i]; }
     __device__ Primitive* get_random_emitter(curandState* local_rand_state);
-    __device__ ~PrimitiveList() { delete[] list; }
+    __device__ ~PrimitiveList() { delete[] emitters; delete[] list; }
 
     Primitive** list;
     int list_size;
