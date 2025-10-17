@@ -205,7 +205,7 @@ __host__ __device__ inline vec3 pow(const vec3& v, float e) {
     return vec3(powf(v.x, e), powf(v.y, e), powf(v.z, e));
 }
 
-__host__ __device__ vec3 sqrt(const vec3& v) {
+__host__ __device__ inline vec3 sqrt(const vec3& v) {
     return vec3(sqrtf(v.x), sqrtf(v.y), sqrtf(v.z));
 }
 
@@ -213,10 +213,10 @@ __host__ __device__ inline vec3 clamp(const vec3& v, float low, float high) {
     return max(vec3(low), min(vec3(high), v));
 }
 
-__host__ __device__ float min_component(const vec3& v) {
+__host__ __device__ inline float min_component(const vec3& v) {
     return fminf(v.x, fminf(v.y, v.z));
 }
 
-__host__ __device__ float max_component(const vec3& v) {
+__host__ __device__ inline float max_component(const vec3& v) {
     return fmaxf(v.x, fmaxf(v.y, v.z));
 }

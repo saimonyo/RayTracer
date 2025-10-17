@@ -16,7 +16,9 @@ public:
     vec3 vertical;
     float lens_radius;
 
-    __device__ Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist);
+    __host__ __device__ Camera() {}
+    __host__ __device__ Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist);
+    __host__ __device__ Camera(Camera* cam);
     __device__ ray get_ray(float s, float t, curandState* local_rand_state);
 };
 
@@ -41,6 +43,20 @@ __device__ Camera::Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, floa
 
     horizontal = 2.0f * half_width * focus_dist * u;
     vertical = 2.0f * half_height * focus_dist * v;
+}
+
+__host__ __device__ Camera::Camera(Camera* cam) {
+    location = cam->location;
+
+    u = cam->u;
+    v = cam->v;
+    w = cam->w;
+
+    lower_left_corner = cam->lower_left_corner;
+    horizontal = cam->horizontal;
+    vertical = cam->vertical;
+
+    lens_radius = cam->lens_radius;
 }
 
 __device__ ray Camera::get_ray(float s, float t, curandState* local_rand_state) {

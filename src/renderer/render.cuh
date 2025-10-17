@@ -4,7 +4,7 @@
 
 namespace Sample {
 
-    __device__ vec3 naive_monte_carlo(const ray& r, PrimitiveList** world, curandState* local_rand_state) {
+    __device__ vec3 naive_monte_carlo(const ray& r, PrimitiveList* world, curandState* local_rand_state) {
         ray cur_ray = r;
         vec3 radiance = 0.0f;
         vec3 throughput = 1.0f;
@@ -14,7 +14,7 @@ namespace Sample {
         for (int i = 0; i <= 50; i++) {
             hit_record rec;
             // check for any intersections
-            if ((*world)->hit(cur_ray, EPSILON, FLT_MAX, rec)) {
+            if (world->hit(cur_ray, EPSILON, FLT_MAX, rec)) {
                 // hit so get material of object
                 Material* mat = rec.mat_ptr;
                 // if its emissive get the value of the emission
@@ -47,7 +47,7 @@ namespace Sample {
         return radiance;
     }
 
-    __device__ vec3 NEE_monte_carlo(const ray& r, PrimitiveList** world, curandState* local_rand_state) {
+    __device__ vec3 NEE_monte_carlo(const ray& r, PrimitiveList* world, curandState* local_rand_state) {
         ray cur_ray = r;
         vec3 radiance = 0.0f;
         vec3 throughput = 1.0f;
@@ -57,7 +57,7 @@ namespace Sample {
         for (int i = 0; i <= 50; i++) {
             hit_record rec;
             // check for any intersections
-            if (!(*world)->hit(cur_ray, EPSILON, FLT_MAX, rec)) {
+            if (!world->hit(cur_ray, EPSILON, FLT_MAX, rec)) {
                 break;
             }
 
@@ -73,7 +73,7 @@ namespace Sample {
             }
 
             // sample a random emitter to sample
-            Primitive* random_emitter = (*world)->get_random_emitter(local_rand_state);
+            Primitive* random_emitter = world->get_random_emitter(local_rand_state);
             vec3 random_point_on_emitter = random_emitter->sample_random_point(local_rand_state);
 
             float emitter_area = random_emitter->area();
@@ -97,7 +97,7 @@ namespace Sample {
                 hit_record shadow_rec;
 
                 // check if we didnt hit anything on the way to the light
-                if (!(*world)->hit(shadow_ray, EPSILON, distance_to_light - 0.001f, shadow_rec)) {
+                if (!world->hit(shadow_ray, EPSILON, distance_to_light - 0.001f, shadow_rec)) {
                     float solid_angle = (cos_o * emitter_area) / distance_to_light_squared;
 
                     float pdf;

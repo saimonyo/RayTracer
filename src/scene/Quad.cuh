@@ -2,8 +2,6 @@
 
 #include "Triangle.cuh"
 
-#define EPSILON 0.000001f
-
 class Quad : public Primitive {
 public:
     Triangle a, b;

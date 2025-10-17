@@ -12,6 +12,36 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
     }
 }
 
+extern Scene* d_world;
+extern vec3* d_accumulation_buffer;
+
+void update_camera_on_device(const vec3& movement_offset, int width, int height) {
+    // --- Step 1: Get a host copy of the Scene object ---
+    Scene h_scene;
+    checkCudaErrors(cudaMemcpy(&h_scene, d_world, sizeof(Scene), cudaMemcpyDeviceToHost));
+
+    // h_scene.camera is now a valid DEVICE pointer to the camera object on the GPU.
+    // We cannot use it on the host, but we can pass it back to other CUDA calls.
+    Camera* d_camera = h_scene.camera;
+
+    // --- Step 2: Get a host copy of the Camera, using its device pointer ---
+    Camera h_camera;
+    checkCudaErrors(cudaMemcpy(&h_camera, d_camera, sizeof(Camera), cudaMemcpyDeviceToHost));
+
+
+    vec3 world_space_offset = h_camera.u * movement_offset.x +
+        h_camera.v * movement_offset.y +
+        h_camera.w * movement_offset.z;
+
+    h_camera.location += world_space_offset;
+    h_camera.lower_left_corner += world_space_offset;
+
+    // --- Step 4: Copy the updated camera back to the device ---
+    checkCudaErrors(cudaMemcpy(d_camera, &h_camera, sizeof(Camera), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMemset(d_accumulation_buffer, 0, width * height * sizeof(vec3)));
+}
+
 __global__ void rand_init(curandState* rand_state) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         curand_init(1984, 0, 0, rand_state);
@@ -34,7 +64,7 @@ __global__ void render_init(int render_width, int render_height, curandState* ra
 
 constexpr float one_over_gamma = 1.0f / 2.2f;
 
-__global__ void render(unsigned char* ptr, int render_width, int render_height, Scene** world, curandState* rand_state, int frame_number, vec3* accum_buffer) {
+__global__ void render(unsigned char* ptr, int render_width, int render_height, Scene* world, curandState* rand_state, int frame_number, vec3* accum_buffer) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -48,10 +78,10 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
 
     float u = float(i + curand_uniform(&local_rand_state)) / float(render_width);
     float v = float(j + curand_uniform(&local_rand_state)) / float(render_height);
-    Camera** cam = (*world)->camera;
-    PrimitiveList** prims = (*world)->primitives;
+    Camera* cam = world->camera;
+    PrimitiveList* prims = world->primitives;
 
-    ray r = (*cam)->get_ray(u, v, &local_rand_state);
+    ray r = cam->get_ray(u, v, &local_rand_state);
     vec3 new_sample = Sample::NEE_monte_carlo(r, prims, &local_rand_state);
 
     // get old value in the buffer
@@ -83,11 +113,11 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
 }
 
 curandState* d_rand_state;
-PrimitiveList** hit_list;
+PrimitiveList* hit_list;
 Primitive** d_list;
-Camera** d_camera;
+Camera* d_camera;
 vec3* d_accumulation_buffer;
-Scene** d_world;
+Scene* d_world;
 int num_hitables = 16;
 
 __host__ void init_scene(int render_width, int render_height) {
@@ -107,13 +137,11 @@ __host__ void init_scene(int render_width, int render_height) {
 
     // Make our world of hitables & the camera
     checkCudaErrors(cudaMalloc((void**)&d_list, num_hitables * sizeof(Primitive*)));
-    checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(PrimitiveList*)));
-    checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera*)));
-    checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene*)));
+    checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(PrimitiveList)));
+    checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera)));
+    checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene)));
 
     create_cornell << <1, 1 >> > (d_list, hit_list, d_camera, d_world, render_width, render_height, d_rand_state_world);
-
-
 
     // Initialize per-pixel random states
     dim3 blocks(render_width / 16 + 1, render_height / 16 + 1);
@@ -148,10 +176,15 @@ __host__ void render_frame(cudaGraphicsResource_t pbo_resource, int render_width
 __host__ void cleanup_scene() {
     checkCudaErrors(cudaDeviceSynchronize());
 
+    free_scene_data_kernel << <1, 1 >> > (d_list, num_hitables);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
     // Free the top-level pointers.
     checkCudaErrors(cudaFree(d_rand_state));
     checkCudaErrors(cudaFree(d_accumulation_buffer));
     checkCudaErrors(cudaFree(d_list));
     checkCudaErrors(cudaFree(hit_list));
     checkCudaErrors(cudaFree(d_camera));
+    checkCudaErrors(cudaFree(d_world));
 }

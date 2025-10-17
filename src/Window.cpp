@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "math/vec3.cuh"
 #include <device_launch_parameters.h>
 
 static auto stationary_window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
@@ -222,7 +223,7 @@ void Window::each_frame_post_kernel() {
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("Accumulated Frames");
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", ImGui::GetFrameCount());
+            ImGui::Text("%d", frame_number);
 
 
             ImGui::TableNextRow();
@@ -238,6 +239,46 @@ void Window::each_frame_post_kernel() {
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
     }
+}
+
+bool Window::handle_user_movement() {
+    float delta_time = ImGui::GetIO().DeltaTime;
+
+    vec3 camera_offset = vec3(0.0f);
+
+    bool updated = false;
+
+
+    if (ImGui::IsKeyDown(ImGuiKey_W)) {
+        camera_offset -= vec3(0.0f, 0.0f, delta_time);
+        updated = true;
+    }
+    if (ImGui::IsKeyDown(ImGuiKey_S)) {
+        camera_offset += vec3(0.0f, 0.0f, delta_time);
+        updated = true;
+    }
+    if (ImGui::IsKeyDown(ImGuiKey_A)) {
+        camera_offset -= vec3(delta_time, 0.0f, 0.0f);
+        updated = true;
+    }
+    if (ImGui::IsKeyDown(ImGuiKey_D)) {
+        camera_offset += vec3(delta_time, 0.0f, 0.0f);
+        updated = true;
+    }
+    if (ImGui::IsKeyDown(ImGuiKey_Space)) {
+        camera_offset += vec3(0.0f, delta_time, 0.0f);
+        updated = true;
+    }
+    if (ImGui::GetIO().KeyCtrl) {
+        camera_offset -= vec3(0.0f, delta_time, 0.0f);
+        updated = true;
+    }
+
+    if (updated) {
+        update_camera_on_device(camera_offset, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+        return true;
+    }
+    return false;
 }
 
 
@@ -256,6 +297,10 @@ void Window::main_loop(std::function<void(cudaGraphicsResource_t, int, int, int)
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        if (handle_user_movement()) {
+            frame_number = -1;
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -54,6 +54,8 @@ private:
 	void Window::each_frame_pre_kernel();
 	void Window::each_frame_post_kernel();
 
+	bool Window::handle_user_movement();
+
 	void clean_up();
 
 

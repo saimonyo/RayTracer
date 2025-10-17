@@ -23,7 +23,7 @@
 
 // hard coded function to generate the cornell box scene
 // - based on data from https://www.graphics.cornell.edu/online/box/data.html
-__global__ void create_cornell(Primitive** d_list, PrimitiveList** hit_list, Camera** d_camera, Scene** world, int nx, int ny, curandState* rand_state) {
+__global__ void create_cornell(Primitive** d_list, PrimitiveList* hit_list, Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         int i = 0;
 
@@ -46,7 +46,7 @@ __global__ void create_cornell(Primitive** d_list, PrimitiveList** hit_list, Cam
         d_list[i++] = new Quad(vec3(0.314f, 0.0f, 0.456f), vec3(0.314f, 0.330f, 0.456f), vec3(0.265f, 0.330f, 0.296f), vec3(0.265f, 0.0f, 0.296f), new lambertian(white));
         d_list[i++] = new Quad(vec3(0.265f, 0.0f, 0.296f), vec3(0.265f, 0.330f, 0.296f), vec3(0.423f, 0.330f, 0.247f), vec3(0.423f, 0.0f, 0.247f), new lambertian(white));
 
-        *hit_list = new PrimitiveList(d_list, 16);
+        new (hit_list) PrimitiveList(d_list, 16);
 
         vec3 lookfrom(0.278f, 0.273f, -0.800f);
         vec3 lookat(0.278f, 0.273f, -0.799f);
@@ -63,15 +63,14 @@ __global__ void create_cornell(Primitive** d_list, PrimitiveList** hit_list, Cam
             aperture,
             dist_to_focus);
 
-        *world = new Scene(hit_list, d_camera);
+        new (world) Scene(hit_list, d_camera);
     }
 }
 
-__global__ void free_hitables_kernel(Primitive** d_list, PrimitiveList** d_world, Camera** d_camera, int num_hitables) {
+__global__ void free_scene_data_kernel(Primitive** d_list, int num_hitables) {
+    // This kernel frees the memory for objects allocated with 'new' in create_cornell
     for (int i = 0; i < num_hitables; i++) {
-        free(d_list[i]->mat_ptr);
-        free(d_list[i]);
+        delete d_list[i]->mat_ptr;
+        delete d_list[i];
     }
-    free(*d_world);
-    free(*d_camera);
 }
