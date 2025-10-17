@@ -45,6 +45,10 @@ private:
 
 	int frame_number = 0;
 
+	ImVec2 prev_mouse_pos;
+	const float mouse_sensitivity = 0.0025f;
+
+
 	bool init_CUDA();
 	bool init_GL();
 	bool init_imgui();

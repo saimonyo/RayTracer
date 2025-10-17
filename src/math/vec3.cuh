@@ -13,8 +13,6 @@ constexpr float ONE_OVER_PI = 1.0f / F_PI;
 
 
 struct vec3 : public float3 {
-public:
-
     //
     // initialisation
     //

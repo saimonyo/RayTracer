@@ -154,6 +154,26 @@ void Window::each_frame_post_kernel() {
         bool isopen = true;
         ImGui::Begin("Viewport", &isopen, stationary_window_flags | ImGuiWindowFlags_NoTitleBar);
 
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            const ImVec2 curr_mouse_pos = ImGui::GetMousePos();
+
+            // prevent jumping on first presses
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                prev_mouse_pos = curr_mouse_pos;
+            }
+
+           
+            float yaw = (curr_mouse_pos.x - prev_mouse_pos.x) * mouse_sensitivity;
+            float pitch   = (curr_mouse_pos.y - prev_mouse_pos.y) * mouse_sensitivity;
+
+            if (fabs(yaw) > 0.000001f || fabs(pitch) > 0.000001f) {
+                update_camera_rotation(yaw, pitch, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+                frame_number = -1;
+            }
+
+            prev_mouse_pos = curr_mouse_pos;
+        }
+
         // Your ImGui::Image call remains the same
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
         ImGui::Image(
@@ -275,7 +295,7 @@ bool Window::handle_user_movement() {
     }
 
     if (updated) {
-        update_camera_on_device(camera_offset, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+        update_camera_location(camera_offset, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
         return true;
     }
     return false;

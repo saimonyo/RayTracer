@@ -1,6 +1,7 @@
 #include "RenderKernel.cuh"
 #include "render.cuh"
 #include "../scene/Scene.cuh"
+#include "../math/Quaternion.cuh"
 
 void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
     if (result) {
@@ -15,16 +16,11 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
 extern Scene* d_world;
 extern vec3* d_accumulation_buffer;
 
-void update_camera_on_device(const vec3& movement_offset, int width, int height) {
-    // --- Step 1: Get a host copy of the Scene object ---
+void update_camera_location(const vec3& movement_offset, int width, int height) {
     Scene h_scene;
     checkCudaErrors(cudaMemcpy(&h_scene, d_world, sizeof(Scene), cudaMemcpyDeviceToHost));
 
-    // h_scene.camera is now a valid DEVICE pointer to the camera object on the GPU.
-    // We cannot use it on the host, but we can pass it back to other CUDA calls.
     Camera* d_camera = h_scene.camera;
-
-    // --- Step 2: Get a host copy of the Camera, using its device pointer ---
     Camera h_camera;
     checkCudaErrors(cudaMemcpy(&h_camera, d_camera, sizeof(Camera), cudaMemcpyDeviceToHost));
 
@@ -36,7 +32,28 @@ void update_camera_on_device(const vec3& movement_offset, int width, int height)
     h_camera.location += world_space_offset;
     h_camera.lower_left_corner += world_space_offset;
 
-    // --- Step 4: Copy the updated camera back to the device ---
+    checkCudaErrors(cudaMemcpy(d_camera, &h_camera, sizeof(Camera), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMemset(d_accumulation_buffer, 0, width * height * sizeof(vec3)));
+}
+
+void update_camera_rotation(float yaw, float pitch, int width, int height) {
+    Scene h_scene;
+    checkCudaErrors(cudaMemcpy(&h_scene, d_world, sizeof(Scene), cudaMemcpyDeviceToHost));
+
+    Camera* d_camera = h_scene.camera;
+    Camera h_camera;
+    checkCudaErrors(cudaMemcpy(&h_camera, d_camera, sizeof(Camera), cudaMemcpyDeviceToHost));
+
+    Quaternion quaternion = quaternion_from_euler(0.0f, -yaw, pitch);
+
+    h_camera.u = quaternion * h_camera.u;
+    h_camera.v = quaternion * h_camera.v;
+    h_camera.w = quaternion * h_camera.w;
+
+    h_camera.update_plane();
+
+
     checkCudaErrors(cudaMemcpy(d_camera, &h_camera, sizeof(Camera), cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMemset(d_accumulation_buffer, 0, width * height * sizeof(vec3)));

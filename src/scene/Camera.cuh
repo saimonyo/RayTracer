@@ -16,19 +16,26 @@ public:
     vec3 vertical;
     float lens_radius;
 
+    float theta;
+    float focal_length;
+    float half_width;
+    float half_height;
+
     __host__ __device__ Camera() {}
-    __host__ __device__ Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist);
+    __host__ __device__ Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focal_length);
     __host__ __device__ Camera(Camera* cam);
+    __host__ __device__ void update_plane();
     __device__ ray get_ray(float s, float t, curandState* local_rand_state);
 };
 
-__device__ Camera::Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist) {
+__device__ Camera::Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focal_length) {
     lens_radius = aperture / 2.0f;
+    this->focal_length = focal_length;
 
     // convert fov to radians
-    float theta = vfov * ((float)F_PI) / 180.0f;
-    float half_height = tan(theta / 2.0f);
-    float half_width = aspect * half_height;
+    this->theta = vfov * ((float)F_PI) / 180.0f;
+    this->half_height = tan(theta / 2.0f);
+    this->half_width = aspect * half_height;
 
     location = lookfrom;
 
@@ -37,12 +44,16 @@ __device__ Camera::Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, floa
     u = normalise(cross(vup, w));
     v = normalise(cross(w, u));
 
-    // calculate the bottom left of the focal plane
-    lower_left_corner = location - half_width * focus_dist * u
-        - half_height * focus_dist * v - focus_dist * w;
+    update_plane();
+}
 
-    horizontal = 2.0f * half_width * focus_dist * u;
-    vertical = 2.0f * half_height * focus_dist * v;
+__host__ __device__ void Camera::update_plane() {
+    // calculate the bottom left of the focal plane using current u, v, w
+    lower_left_corner = location - half_width * focal_length * u
+        - half_height * focal_length * v - focal_length * w;
+
+    horizontal = 2.0f * half_width * focal_length * u;
+    vertical = 2.0f * half_height * focal_length * v;
 }
 
 __host__ __device__ Camera::Camera(Camera* cam) {
@@ -57,6 +68,10 @@ __host__ __device__ Camera::Camera(Camera* cam) {
     vertical = cam->vertical;
 
     lens_radius = cam->lens_radius;
+    theta = cam->theta;
+    focal_length = cam->focal_length;
+    half_width = cam->half_width;
+    half_height = cam->half_height;
 }
 
 __device__ ray Camera::get_ray(float s, float t, curandState* local_rand_state) {
