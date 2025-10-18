@@ -25,9 +25,9 @@ void update_camera_location(const vec3& movement_offset, int width, int height) 
     checkCudaErrors(cudaMemcpy(&h_camera, d_camera, sizeof(Camera), cudaMemcpyDeviceToHost));
 
 
-    vec3 world_space_offset = h_camera.u * movement_offset.x +
-        h_camera.v * movement_offset.y +
-        h_camera.w * movement_offset.z;
+    vec3 world_space_offset = h_camera.local_right * movement_offset.x +
+        h_camera.local_up * movement_offset.y +
+        h_camera.local_forward * movement_offset.z;
 
     h_camera.location += world_space_offset;
     h_camera.lower_left_corner += world_space_offset;
@@ -45,11 +45,24 @@ void update_camera_rotation(float yaw, float pitch, int width, int height) {
     Camera h_camera;
     checkCudaErrors(cudaMemcpy(&h_camera, d_camera, sizeof(Camera), cudaMemcpyDeviceToHost));
 
-    Quaternion quaternion = quaternion_from_euler(0.0f, -yaw, pitch);
+    if (h_camera.total_pitch + pitch > F_PI / 2 || h_camera.total_pitch + pitch < -F_PI / 2) {
+        pitch = 0;
+    }
 
-    h_camera.u = quaternion * h_camera.u;
-    h_camera.v = quaternion * h_camera.v;
-    h_camera.w = quaternion * h_camera.w;
+    Quaternion pitch_quaternion = quaternion_axis_angle(h_camera.local_right, pitch);
+    Quaternion yaw_quaternion = quaternion_axis_angle(h_camera.world_up, yaw);
+
+    h_camera.local_forward = yaw_quaternion * h_camera.local_forward;
+    h_camera.local_right = yaw_quaternion * h_camera.local_right;
+    h_camera.local_up = yaw_quaternion * h_camera.local_up;
+
+    
+    h_camera.local_up = pitch_quaternion * h_camera.local_up;
+    h_camera.local_forward = pitch_quaternion * h_camera.local_forward;
+
+    h_camera.total_pitch += pitch;
+
+   
 
     h_camera.update_plane();
 

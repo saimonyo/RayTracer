@@ -16,7 +16,7 @@ inline vec3 operator*(const Quaternion& quaternion, const vec3& vector) {
 }
 
 // Based on: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-inline static Quaternion quaternion_from_euler(float yaw, float pitch, float roll) {
+inline Quaternion quaternion_from_euler(float yaw, float pitch, float roll) {
 	float cos_yaw = cosf(yaw * 0.5f);
 	float sin_yaw = sinf(yaw * 0.5f);
 	float cos_pitch = cosf(pitch * 0.5f);
@@ -30,4 +30,16 @@ inline static Quaternion quaternion_from_euler(float yaw, float pitch, float rol
 		cos_roll * cos_pitch * sin_yaw - sin_roll * sin_pitch * cos_yaw,
 		cos_roll * cos_pitch * cos_yaw + sin_roll * sin_pitch * sin_yaw
 	};
+}
+
+inline Quaternion quaternion_axis_angle(const vec3& axis, float angle) {
+	float half_angle = 0.5f * angle;
+	float sine = sinf(half_angle);
+
+	return Quaternion(
+		axis.x * sine,
+		axis.y * sine,
+		axis.z * sine,
+		cosf(half_angle)
+	);
 }

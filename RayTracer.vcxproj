@@ -49,6 +49,10 @@
     <ClInclude Include="src\scene\PrimitiveList.cuh" />
     <ClInclude Include="src\scene\Primitive.cuh" />
     <ClInclude Include="src\scene\Scene.cuh" />
+    <ClInclude Include="src\tiny_gltf\json.hpp" />
+    <ClInclude Include="src\tiny_gltf\stb_image.h" />
+    <ClInclude Include="src\tiny_gltf\stb_image_write.h" />
+    <ClInclude Include="src\tiny_gltf\tiny_gltf.h" />
     <ClInclude Include="src\Window.h" />
   </ItemGroup>
   <ItemGroup>

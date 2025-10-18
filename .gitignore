@@ -476,3 +476,4 @@ FodyWeavers.xsd
 *.cubin
 *.fatbin
 
+data/

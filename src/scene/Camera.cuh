@@ -8,7 +8,7 @@ class Camera {
 public:
     vec3 location;
     // corresponding to the local orientation of the camera
-    vec3 u, v, w;
+    vec3 local_up, local_right, local_forward;
     // properties of the focal plane
     vec3 lower_left_corner;
     //  - the vectors defining the edges
@@ -20,6 +20,9 @@ public:
     float focal_length;
     float half_width;
     float half_height;
+
+    float total_pitch = 0.0;
+    vec3 world_up;
 
     __host__ __device__ Camera() {}
     __host__ __device__ Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focal_length);
@@ -40,28 +43,30 @@ __device__ Camera::Camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, floa
     location = lookfrom;
 
     // generate the local axis
-    w = normalise(lookfrom - lookat);
-    u = normalise(cross(vup, w));
-    v = normalise(cross(w, u));
+    local_forward = normalise(lookfrom - lookat);
+    local_right = normalise(cross(vup, local_forward));
+    local_up = vup;
+
+    world_up = vup;
 
     update_plane();
 }
 
 __host__ __device__ void Camera::update_plane() {
     // calculate the bottom left of the focal plane using current u, v, w
-    lower_left_corner = location - half_width * focal_length * u
-        - half_height * focal_length * v - focal_length * w;
+    lower_left_corner = location - half_width * focal_length * local_right
+        - half_height * focal_length * local_up - focal_length * local_forward;
 
-    horizontal = 2.0f * half_width * focal_length * u;
-    vertical = 2.0f * half_height * focal_length * v;
+    horizontal = 2.0f * half_width * focal_length * local_right;
+    vertical = 2.0f * half_height * focal_length * local_up;
 }
 
 __host__ __device__ Camera::Camera(Camera* cam) {
     location = cam->location;
 
-    u = cam->u;
-    v = cam->v;
-    w = cam->w;
+    local_up = cam->local_up;
+    local_right = cam->local_right;
+    local_forward = cam->local_forward;
 
     lower_left_corner = cam->lower_left_corner;
     horizontal = cam->horizontal;
@@ -72,12 +77,15 @@ __host__ __device__ Camera::Camera(Camera* cam) {
     focal_length = cam->focal_length;
     half_width = cam->half_width;
     half_height = cam->half_height;
+    total_pitch = cam->total_pitch;
+
+    world_up = cam->world_up;
 }
 
 __device__ ray Camera::get_ray(float s, float t, curandState* local_rand_state) {
     // create tiny offset
     vec3 rd = lens_radius * random_in_unit_disk(local_rand_state);
-    vec3 offset = u * rd.x + v * rd.y;
+    vec3 offset = local_right * rd.x + local_up * rd.y;
 
     vec3 target = lower_left_corner + s * horizontal + t * vertical;
 

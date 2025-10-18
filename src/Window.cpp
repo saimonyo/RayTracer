@@ -167,7 +167,7 @@ void Window::each_frame_post_kernel() {
             float pitch   = (curr_mouse_pos.y - prev_mouse_pos.y) * mouse_sensitivity;
 
             if (fabs(yaw) > 0.000001f || fabs(pitch) > 0.000001f) {
-                update_camera_rotation(yaw, pitch, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+                update_camera_rotation(-yaw, -pitch, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
                 frame_number = -1;
             }
 
@@ -243,7 +243,8 @@ void Window::each_frame_post_kernel() {
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("Accumulated Frames");
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", frame_number);
+            int shown_accumalated = frame_number > 0 ? frame_number : 0;
+            ImGui::Text("%d", shown_accumalated);
 
 
             ImGui::TableNextRow();
