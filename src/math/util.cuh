@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vec3.cuh"
+#include <curand_kernel.h>
 
 
 #define RANDVEC3 vec3(curand_uniform(local_rand_state),curand_uniform(local_rand_state),curand_uniform(local_rand_state))
