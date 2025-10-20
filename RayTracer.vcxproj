@@ -44,12 +44,10 @@
     <ClInclude Include="src\scene\Camera.cuh" />
     <ClInclude Include="src\scene\Material.cuh" />
     <ClInclude Include="src\scene\object_loader.cuh" />
-    <ClInclude Include="src\scene\Quad.cuh" />
     <ClInclude Include="src\scene\setup.cuh" />
     <ClInclude Include="src\scene\Triangle.cuh" />
-    <ClInclude Include="src\scene\PrimitiveList.cuh" />
-    <ClInclude Include="src\scene\Primitive.cuh" />
     <ClInclude Include="src\scene\Scene.cuh" />
+    <ClInclude Include="src\scene\TriangleList.cuh" />
     <ClInclude Include="src\tiny_gltf\json.hpp" />
     <ClInclude Include="src\tiny_gltf\stb_image.h" />
     <ClInclude Include="src\tiny_gltf\stb_image_write.h" />

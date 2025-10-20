@@ -3,12 +3,19 @@
 struct hit_record;
 
 #include "../math/ray.cuh"
-#include "Primitive.cuh"
 
 
 __device__ bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted);
 __device__ vec3 reflect(const vec3& v, const vec3& n);
 
+class Material;
+
+struct hit_record {
+    float t;
+    vec3 p;
+    vec3 normal;
+    Material* mat_ptr = nullptr;
+};
 
 
 class Material {

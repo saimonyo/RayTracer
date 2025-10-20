@@ -109,7 +109,7 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
     float u = float(i + curand_uniform(&local_rand_state)) / float(render_width);
     float v = float(j + curand_uniform(&local_rand_state)) / float(render_height);
     Camera* cam = world->camera;
-    PrimitiveList* prims = world->primitives;
+    TriangleList* prims = world->primitives;
 
     ray r = cam->get_ray(u, v, &local_rand_state);
     vec3 new_sample = Sample::NEE_monte_carlo(r, prims, &local_rand_state);
@@ -143,12 +143,12 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
 }
 
 curandState* d_rand_state;
-PrimitiveList* hit_list;
-Primitive** d_list;
+TriangleList* hit_list;
+Triangle** d_list;
 Camera* d_camera;
 vec3* d_accumulation_buffer;
 Scene* d_world;
-int num_hitables = 16;
+int num_hitables = 32;
 
 __host__ void init_scene(int render_width, int render_height) {
     int num_pixels = render_width * render_height;
@@ -166,8 +166,8 @@ __host__ void init_scene(int render_width, int render_height) {
 
 
     // Make our world of hitables & the camera
-    checkCudaErrors(cudaMalloc((void**)&d_list, num_hitables * sizeof(Primitive*)));
-    checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(PrimitiveList)));
+    checkCudaErrors(cudaMalloc((void**)&d_list, num_hitables * sizeof(Triangle*)));
+    checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(TriangleList)));
     checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera)));
     checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene)));
 

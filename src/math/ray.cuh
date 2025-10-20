@@ -9,6 +9,8 @@
 extern __device__ int ray_count = 0;
 
 
+
+
 // returns the current value of ray_count
 // - needs to be in a wrapper to work
 int get_ray_count() {

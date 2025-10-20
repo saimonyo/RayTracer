@@ -102,7 +102,7 @@ bool Window::initialise() {
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     // initialise other parts required by Window
     if (!init_GL()) {

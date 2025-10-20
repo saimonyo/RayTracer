@@ -4,7 +4,7 @@
 
 namespace Sample {
 
-    __device__ vec3 naive_monte_carlo(const ray& r, PrimitiveList* world, curandState* local_rand_state) {
+    __device__ vec3 naive_monte_carlo(const ray& r, TriangleList* world, curandState* local_rand_state) {
         ray cur_ray = r;
         vec3 radiance = 0.0f;
         vec3 throughput = 1.0f;
@@ -47,7 +47,7 @@ namespace Sample {
         return radiance;
     }
 
-    __device__ vec3 NEE_monte_carlo(const ray& r, PrimitiveList* world, curandState* local_rand_state) {
+    __device__ vec3 NEE_monte_carlo(const ray& r, TriangleList* world, curandState* local_rand_state) {
         ray cur_ray = r;
         vec3 radiance = 0.0f;
         vec3 throughput = 1.0f;
@@ -73,7 +73,7 @@ namespace Sample {
             }
 
             // sample a random emitter to sample
-            Primitive* random_emitter = world->get_random_emitter(local_rand_state);
+            Triangle* random_emitter = world->get_random_emitter(local_rand_state);
             vec3 random_point_on_emitter = random_emitter->sample_random_point(local_rand_state);
 
             float emitter_area = random_emitter->area();

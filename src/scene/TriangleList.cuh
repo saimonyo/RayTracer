@@ -1,28 +1,27 @@
 #pragma once
 
-#include "Primitive.cuh"
-#include "Material.cuh"
+#include "Triangle.cuh"
 
 
-class PrimitiveList {
+class TriangleList {
 public:
-    __device__ PrimitiveList() {}
-    __device__ PrimitiveList(Primitive** l, int n);
+    __device__ TriangleList() {}
+    __device__ TriangleList(Triangle** l, int n);
     __device__ bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
-    __host__ __device__ inline Primitive* operator[](int i) const { return list[i]; }
-    __device__ Primitive* get_random_emitter(curandState* local_rand_state);
-    __device__ ~PrimitiveList() { delete[] emitters; delete[] list; }
+    __host__ __device__ inline Triangle* operator[](int i) const { return list[i]; }
+    __device__ Triangle* get_random_emitter(curandState* local_rand_state);
+    __device__ ~TriangleList() { delete[] emitters; delete[] list; }
 
-    Primitive** list;
+    Triangle** list;
     int list_size;
-    Primitive** emitters;
+    Triangle** emitters;
     int emitters_size;
 };
 
-__device__ PrimitiveList::PrimitiveList(Primitive** l, int n) {
+__device__ TriangleList::TriangleList(Triangle** l, int n) {
     list = l;
     list_size = n;
-    Primitive** temp = new Primitive * [n];
+    Triangle** temp = new Triangle * [n];
     emitters_size = 0;
 
     for (int i = 0; i < n; i++) {
@@ -32,14 +31,14 @@ __device__ PrimitiveList::PrimitiveList(Primitive** l, int n) {
         }
     }
 
-    emitters = new Primitive* [emitters_size];
+    emitters = new Triangle * [emitters_size];
     for (int i = 0; i < emitters_size; i++) {
         emitters[i] = temp[i];
     }
     delete[] temp;
 }
 
-__device__ bool PrimitiveList::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
+__device__ bool TriangleList::hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
     hit_record temp_rec;
     bool hit_anything = false;
     float closest_so_far = t_max;
@@ -54,7 +53,7 @@ __device__ bool PrimitiveList::hit(const ray& r, float t_min, float t_max, hit_r
     return hit_anything;
 }
 
-__device__ Primitive* PrimitiveList::get_random_emitter(curandState* local_rand_state) {
+__device__ Triangle* TriangleList::get_random_emitter(curandState* local_rand_state) {
     assert(emitters_size > 0);
     int rand_idx = curand(local_rand_state) % emitters_size;
     return emitters[rand_idx];

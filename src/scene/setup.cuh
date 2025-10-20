@@ -7,8 +7,7 @@
 #include "../math/vec3.cuh"
 #include "../math/ray.cuh"
 #include "Triangle.cuh"
-#include "Quad.cuh"
-#include "PrimitiveList.cuh"
+#include "TriangleList.cuh"
 #include "camera.cuh"
 #include "material.cuh"
 #include "Scene.cuh"
@@ -23,30 +22,44 @@
 
 // hard coded function to generate the cornell box scene
 // - based on data from https://www.graphics.cornell.edu/online/box/data.html
-__global__ void create_cornell(Primitive** d_list, PrimitiveList* hit_list, Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state) {
+__global__ void create_cornell(Triangle** d_list, TriangleList* hit_list, Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         int i = 0;
 
-        d_list[i++] = new Quad(vec3(0.5528f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.5592f), vec3(0.5496f, 0.0f, 0.5592f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.343f, 0.54875f, 0.227f), vec3(0.343f, 0.54875f, 0.332f), vec3(0.213f, 0.54875f, 0.332f), vec3(0.213f, 0.54875f, 0.227f), new lambertian(vec3(1.0f), 15.0f, vec3(1.0f)));
-        d_list[i++] = new Quad(vec3(0.556f, 0.5488f, 0.0f), vec3(0.556f, 0.5488f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), vec3(0.0f, 0.5488f, 0.0f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.5496f, 0.0f, 0.5592f), vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), vec3(0.556f, 0.5488f, 0.5592f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.5488f, 0.0f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(green));
-        d_list[i++] = new Quad(vec3(0.5528f, 0.0f, 0.0f), vec3(0.5496f, 0.0f, 0.5592f), vec3(0.556f, 0.5488f, 0.5592f), vec3(0.556f, 0.5488f, 0.0f), new lambertian(red));
+        d_list[i++] = new Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.5592f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.5592f), vec3(0.5496f, 0.0f, 0.5592f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.343f, 0.54875f, 0.227f), vec3(0.343f, 0.54875f, 0.332f), vec3(0.213f, 0.54875f, 0.332f), new lambertian(vec3(1.0f), 15.0f, vec3(1.0f)));
+        d_list[i++] = new Triangle(vec3(0.343f, 0.54875f, 0.227f), vec3(0.213f, 0.54875f, 0.332f), vec3(0.213f, 0.54875f, 0.227f), new lambertian(vec3(1.0f), 15.0f, vec3(1.0f)));
+        d_list[i++] = new Triangle(vec3(0.556f, 0.5488f, 0.0f), vec3(0.556f, 0.5488f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.556f, 0.5488f, 0.0f), vec3(0.0f, 0.5488f, 0.5592f), vec3(0.0f, 0.5488f, 0.0f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.5496f, 0.0f, 0.5592f), vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.5496f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), vec3(0.556f, 0.5488f, 0.5592f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.5488f, 0.0f), new lambertian(green));
+        d_list[i++] = new Triangle(vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.0f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(green));
+        d_list[i++] = new Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.5496f, 0.0f, 0.5592f), vec3(0.556f, 0.5488f, 0.5592f), new lambertian(red));
+        d_list[i++] = new Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.556f, 0.5488f, 0.5592f), vec3(0.556f, 0.5488f, 0.0f), new lambertian(red));
+        d_list[i++] = new Triangle(vec3(0.130f, 0.165f, 0.065f), vec3(0.082f, 0.165f, 0.225f), vec3(0.240f, 0.165f, 0.272f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.130f, 0.165f, 0.065f), vec3(0.240f, 0.165f, 0.272f), vec3(0.290f, 0.165f, 0.114f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.290f, 0.0f, 0.114f), vec3(0.290f, 0.165f, 0.114f), vec3(0.240f, 0.165f, 0.272f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.290f, 0.0f, 0.114f), vec3(0.240f, 0.165f, 0.272f), vec3(0.240f, 0.0f, 0.272f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.130f, 0.0f, 0.065f), vec3(0.130f, 0.165f, 0.065f), vec3(0.290f, 0.165f, 0.114f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.130f, 0.0f, 0.065f), vec3(0.290f, 0.165f, 0.114f), vec3(0.290f, 0.0f, 0.114f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.082f, 0.0f, 0.225f), vec3(0.082f, 0.165f, 0.225f), vec3(0.130f, 0.165f, 0.065f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.082f, 0.0f, 0.225f), vec3(0.130f, 0.165f, 0.065f), vec3(0.130f, 0.0f, 0.065f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.240f, 0.0f, 0.272f), vec3(0.240f, 0.165f, 0.272f), vec3(0.082f, 0.165f, 0.225f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.240f, 0.0f, 0.272f), vec3(0.082f, 0.165f, 0.225f), vec3(0.082f, 0.0f, 0.225f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.423f, 0.330f, 0.247f), vec3(0.265f, 0.330f, 0.296f), vec3(0.314f, 0.330f, 0.456f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.423f, 0.330f, 0.247f), vec3(0.314f, 0.330f, 0.456f), vec3(0.472f, 0.330f, 0.406f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.423f, 0.0f, 0.247f), vec3(0.423f, 0.330f, 0.247f), vec3(0.472f, 0.330f, 0.406f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.423f, 0.0f, 0.247f), vec3(0.472f, 0.330f, 0.406f), vec3(0.472f, 0.0f, 0.406f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.472f, 0.0f, 0.406f), vec3(0.472f, 0.330f, 0.406f), vec3(0.314f, 0.330f, 0.456f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.472f, 0.0f, 0.406f), vec3(0.314f, 0.330f, 0.456f), vec3(0.314f, 0.0f, 0.456f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.314f, 0.0f, 0.456f), vec3(0.314f, 0.330f, 0.456f), vec3(0.265f, 0.330f, 0.296f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.314f, 0.0f, 0.456f), vec3(0.265f, 0.330f, 0.296f), vec3(0.265f, 0.0f, 0.296f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.265f, 0.0f, 0.296f), vec3(0.265f, 0.330f, 0.296f), vec3(0.423f, 0.330f, 0.247f), new lambertian(white));
+        d_list[i++] = new Triangle(vec3(0.265f, 0.0f, 0.296f), vec3(0.423f, 0.330f, 0.247f), vec3(0.423f, 0.0f, 0.247f), new lambertian(white));
 
-        d_list[i++] = new Quad(vec3(0.130f, 0.165f, 0.065f), vec3(0.082f, 0.165f, 0.225f), vec3(0.240f, 0.165f, 0.272f), vec3(0.290f, 0.165f, 0.114f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.290f, 0.0f, 0.114f), vec3(0.290f, 0.165f, 0.114f), vec3(0.240f, 0.165f, 0.272f), vec3(0.240f, 0.0f, 0.272f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.130f, 0.0f, 0.065f), vec3(0.130f, 0.165f, 0.065f), vec3(0.290f, 0.165f, 0.114f), vec3(0.290f, 0.0f, 0.114f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.082f, 0.0f, 0.225f), vec3(0.082f, 0.165f, 0.225f), vec3(0.130f, 0.165f, 0.065f), vec3(0.130f, 0.0f, 0.065f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.240f, 0.0f, 0.272f), vec3(0.240f, 0.165f, 0.272f), vec3(0.082f, 0.165f, 0.225f), vec3(0.082f, 0.0f, 0.225f), new lambertian(white));
-
-        d_list[i++] = new Quad(vec3(0.423f, 0.330f, 0.247f), vec3(0.265f, 0.330f, 0.296f), vec3(0.314f, 0.330f, 0.456f), vec3(0.472f, 0.330f, 0.406f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.423f, 0.0f, 0.247f), vec3(0.423f, 0.330f, 0.247f), vec3(0.472f, 0.330f, 0.406f), vec3(0.472f, 0.0f, 0.406f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.472f, 0.0f, 0.406f), vec3(0.472f, 0.330f, 0.406f), vec3(0.314f, 0.330f, 0.456f), vec3(0.314f, 0.0f, 0.456f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.314f, 0.0f, 0.456f), vec3(0.314f, 0.330f, 0.456f), vec3(0.265f, 0.330f, 0.296f), vec3(0.265f, 0.0f, 0.296f), new lambertian(white));
-        d_list[i++] = new Quad(vec3(0.265f, 0.0f, 0.296f), vec3(0.265f, 0.330f, 0.296f), vec3(0.423f, 0.330f, 0.247f), vec3(0.423f, 0.0f, 0.247f), new lambertian(white));
-
-        new (hit_list) PrimitiveList(d_list, 16);
+        new (hit_list) TriangleList(d_list, 32);
 
         vec3 lookfrom(0.278f, 0.273f, -0.800f);
         vec3 lookat(0.278f, 0.273f, -0.799f);
@@ -67,7 +80,7 @@ __global__ void create_cornell(Primitive** d_list, PrimitiveList* hit_list, Came
     }
 }
 
-__global__ void free_scene_data_kernel(Primitive** d_list, int num_hitables) {
+__global__ void free_scene_data_kernel(Triangle** d_list, int num_hitables) {
     // This kernel frees the memory for objects allocated with 'new' in create_cornell
     for (int i = 0; i < num_hitables; i++) {
         delete d_list[i]->mat_ptr;

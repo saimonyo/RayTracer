@@ -1,15 +1,15 @@
 #pragma once
 
-#include "PrimitiveList.cuh"
+#include "TriangleList.cuh"
 #include "Camera.cuh"
 
 
 class Scene {
 public:
     __device__ __host__ Scene() {}
-    __device__ __host__ Scene(PrimitiveList* prims, Camera* cam) : primitives(prims), camera(cam) {}
+    __device__ __host__ Scene(TriangleList* prims, Camera* cam) : primitives(prims), camera(cam) {}
 
-    PrimitiveList* primitives;
+    TriangleList* primitives;
     Camera* camera;
 };
 

@@ -1,25 +1,26 @@
 #pragma once
 
-#include "Primitive.cuh"
+#include "Material.cuh"
 
 #define EPSILON 0.000001f
 
-class Triangle : public Primitive {
+class Triangle{
 public:
     vec3 v1, v2, v3;
     vec3 e1, e2;
     vec3 n;
+    Material* mat_ptr;
 
     __device__ Triangle() {}
-    __device__ Triangle(vec3 v_1, vec3 v_2, vec3 v_3, Material* m) : v1(v_1), v2(v_2), v3(v_3), Primitive(m) {
+    __device__ Triangle(vec3 v_1, vec3 v_2, vec3 v_3, Material* m) : v1(v_1), v2(v_2), v3(v_3), mat_ptr(m) {
         e1 = v2 - v1;
         e2 = v3 - v1;
         n = normalise(cross(e1, e2));
     };
-    __device__ virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
-    __device__ virtual vec3 normal(vec3 point) const;
-    __device__ virtual float area() const;
-    __device__ virtual vec3 sample_random_point(curandState* local_rand_state) const;
+    __device__ bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
+    __device__ vec3 normal(vec3 point) const;
+    __device__ float area() const;
+    __device__ vec3 sample_random_point(curandState* local_rand_state) const;
 };
 
 
