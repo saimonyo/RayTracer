@@ -144,7 +144,7 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
 
 curandState* d_rand_state;
 TriangleList* hit_list;
-Triangle** d_list;
+Triangle* d_list;
 Camera* d_camera;
 vec3* d_accumulation_buffer;
 Scene* d_world;
@@ -166,7 +166,7 @@ __host__ void init_scene(int render_width, int render_height) {
 
 
     // Make our world of hitables & the camera
-    checkCudaErrors(cudaMalloc((void**)&d_list, num_hitables * sizeof(Triangle*)));
+    checkCudaErrors(cudaMalloc((void**)&d_list, num_hitables * sizeof(Triangle)));
     checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(TriangleList)));
     checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera)));
     checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene)));
