@@ -23,4 +23,5 @@ void update_camera_rotation(float yaw, float pitch, int width, int height);
 
 
 __host__ void render_frame(cudaGraphicsResource_t pbo_resource, int render_width, int render_height, int frame_number);
-__host__ void init_scene(int render_width, int render_height);
+__host__ void init_cornell_scene(int render_width, int render_height);
+__host__ void init_model_scene(int render_width, int render_height, vec3* vertices, unsigned int* indices, size_t indices_count, size_t vertices_count, size_t triangle_count);

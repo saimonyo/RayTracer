@@ -43,7 +43,7 @@
     <ClInclude Include="src\renderer\RenderKernel.cuh" />
     <ClInclude Include="src\scene\Camera.cuh" />
     <ClInclude Include="src\scene\Material.cuh" />
-    <ClInclude Include="src\scene\object_loader.cuh" />
+    <ClInclude Include="src\scene\object_loader.h" />
     <ClInclude Include="src\scene\setup.cuh" />
     <ClInclude Include="src\scene\Triangle.cuh" />
     <ClInclude Include="src\scene\Scene.cuh" />

@@ -49,11 +49,11 @@ private:
 	const float mouse_sensitivity = 0.0025f;
 
 
-	bool init_CUDA();
+	bool init_CUDA(std::string model_file);
 	bool init_GL();
 	bool init_imgui();
 	bool setup_buffers();
-	bool initialise();
+	bool initialise(std::string model_file);
 
 	void Window::each_frame_pre_kernel();
 	void Window::each_frame_post_kernel();
@@ -64,7 +64,7 @@ private:
 
 
 public:
-	Window(const int vp_width, const int vp_height, const int mw_width, const int mw_height);
+	Window(const int vp_width, const int vp_height, const int mw_width, const int mw_height, std::string model_file);
 	~Window();
 	void main_loop(std::function<void(cudaGraphicsResource_t, int, int, int)> kernel);
 };

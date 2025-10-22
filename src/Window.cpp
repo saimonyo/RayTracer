@@ -1,12 +1,13 @@
 #include "Window.h"
 #include "math/vec3.cuh"
 #include <device_launch_parameters.h>
+#include "scene/object_loader.h"
 
 static auto stationary_window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
 int get_ray_count();
 
-bool Window::init_CUDA() {
+bool Window::init_CUDA(std::string model_file) {
     int device_id = -1;
     unsigned int device_count = 0;
     int devices[1];
@@ -22,8 +23,28 @@ bool Window::init_CUDA() {
 
     checkCudaErrors(cudaGLSetGLDevice(device_id));
 
-    init_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+    if (model_file.size() == 0) {
+        init_cornell_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+    }
+    else {
+        std::vector<vec3> vertices;
+        std::vector<unsigned int> indices;
 
+        if (!load_model(model_file.c_str() , vertices, indices)) {
+            return false;
+        }
+
+        if (vertices.empty() || indices.empty()) {
+            std::cerr << "ERROR: either vertices or indices did not get loaded" << std::endl;
+            return false;
+        }
+
+        init_model_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, &vertices[0], &indices[0], indices.size(), vertices.size(), indices.size() / 3);
+        
+        // clear host side vectors
+        vertices.clear();
+        indices.clear();
+    }
     return true;
 }
 
@@ -81,7 +102,7 @@ bool Window::setup_buffers() {
 }
 
 
-bool Window::initialise() {
+bool Window::initialise(std::string model_file) {
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
@@ -90,7 +111,8 @@ bool Window::initialise() {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     window = glfwCreateWindow(MAINWINDOW_WIDTH, MAINWINDOW_HEIGHT, "Ray Tracing", NULL, NULL);
@@ -108,7 +130,7 @@ bool Window::initialise() {
     if (!init_GL()) {
         return false;
     }
-    if (!init_CUDA()) {
+    if (!init_CUDA(model_file)) {
         return false;
     }
     if (!setup_buffers()) {
@@ -121,9 +143,9 @@ bool Window::initialise() {
     return true;
 }
 
-Window::Window(const int vp_width, const int vp_height, const int mw_width, const int mw_height)
+Window::Window(const int vp_width, const int vp_height, const int mw_width, const int mw_height, std::string model_file = "")
     : VIEWPORT_WIDTH(vp_width), VIEWPORT_HEIGHT(vp_height), MAINWINDOW_WIDTH(mw_width), MAINWINDOW_HEIGHT(mw_height) {
-    if (!initialise()) {
+    if (!initialise(model_file)) {
         exit(-1);
     }
 }

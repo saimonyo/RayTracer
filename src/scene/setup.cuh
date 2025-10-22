@@ -68,7 +68,49 @@ __global__ void create_cornell(Triangle* d_list, TriangleList* hit_list, Camera*
 
         float aperture = 0.000025f;
 
-        *d_camera = new Camera(lookfrom,
+        new (d_camera) Camera(lookfrom,
+            lookat,
+            vec3(0.0f, 1.0f, 0.0f),
+            40.0f,
+            float(nx) / float(ny),
+            aperture,
+            dist_to_focus);
+
+        new (world) Scene(hit_list, d_camera);
+    }
+}
+
+__global__ void create_model_scene(Triangle* d_list, TriangleList* hit_list,
+    Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state,
+    vec3* vertices, unsigned int* indices, size_t triangle_count) {
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+        Material* shared_mat = new lambertian(white);
+        Material* shiny_mat = new lambertian(vec3(1.0f), 15.0f, vec3(1.0f));
+        for (size_t i = 0; i < triangle_count; i++) {
+            unsigned int i1, i2, i3;
+            i1 = indices[3 * i + 0];
+            i2 = indices[3 * i + 1];
+            i3 = indices[3 * i + 2];
+
+            vec3 v1, v2, v3;
+            v1 = vertices[i1];
+            v2 = vertices[i2];
+            v3 = vertices[i3];
+
+            // CURRENTLY DUE TO NEE CODE SOME MATERIALS HAVE TO BE EMITTERS
+            d_list[i] = Triangle(v1, v2, v3, shiny_mat);
+        }
+
+        new (hit_list) TriangleList(d_list, triangle_count);
+
+        vec3 lookfrom(0.0f, 0.0f, 0.0f);
+        vec3 lookat(0.0f, 0.0f, 1.0f);
+
+        float dist_to_focus = 1;
+
+        float aperture = 0.000025f;
+
+        new (d_camera) Camera(lookfrom,
             lookat,
             vec3(0.0f, 1.0f, 0.0f),
             40.0f,

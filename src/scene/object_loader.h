@@ -18,7 +18,8 @@
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 
-bool load_model(tinygltf::Model& model, const char* filename) {
+bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vector<unsigned int>& all_indices) {
+    tinygltf::Model model;
     tinygltf::TinyGLTF loader;
     std::string err;
     std::string warn;
@@ -32,13 +33,14 @@ bool load_model(tinygltf::Model& model, const char* filename) {
         std::cout << "ERR: " << err << std::endl;
     }
 
-    if (!res)
+    if (!res) {
         std::cout << "Failed to load glTF: " << filename << std::endl;
-    else
+        return false;
+    }
+    else {
         std::cout << "Loaded glTF: " << filename << std::endl;
+    }
 
-    std::vector<vec3> all_vertices;
-    std::vector<size_t> all_indices;
 
     for (const auto& mesh : model.meshes) {
         for (const auto& primitive : mesh.primitives) {
@@ -57,7 +59,7 @@ bool load_model(tinygltf::Model& model, const char* filename) {
             size_t vertex_offset = all_vertices.size();
 
             for (size_t i = 0; i < pos_accessor.count; ++i) {
-                all_vertices.push_back(vec3(positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]));
+                all_vertices.push_back(100.0f * vec3(positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]));
             }
 
             if (primitive.indices > -1) {
@@ -102,9 +104,4 @@ bool load_model(tinygltf::Model& model, const char* filename) {
         }
     }
     return res;
-
-    /*std::vector<Triangle> triangles;
-    for (size_t i = 0; i < all_indices.size(); i += 3) {
-        triangles.push_back(Triangle(all_indices[i + 0], all_indices[i + 1], all_indices[i + 2], new lambertian(white)));
-    }*/
 }
