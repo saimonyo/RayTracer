@@ -22,9 +22,12 @@ int get_ray_count() {
 
 class ray {
 public:
-    vec3 origin, direction;
+    vec3 origin, direction, inv_direction;
 
     __device__ ray() {}
-    __device__ ray(const vec3& o, const vec3& dir) : origin(o), direction(dir) { atomicAdd(&ray_count, 1); }
+    __device__ ray(const vec3& o, const vec3& dir) : origin(o), direction(dir) {
+        atomicAdd(&ray_count, 1); 
+        inv_direction = 1.0f / dir;
+    }
     __device__ vec3 at(float t) const { return origin + t * direction; }
 };

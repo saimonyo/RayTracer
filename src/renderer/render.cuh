@@ -4,7 +4,7 @@
 
 namespace Sample {
 
-    __device__ vec3 naive_monte_carlo(const ray& r, TriangleList* world, curandState* local_rand_state) {
+    __device__ vec3 naive_monte_carlo(const ray& r, BVH* world, curandState* local_rand_state) {
         ray cur_ray = r;
         vec3 radiance = 0.0f;
         vec3 throughput = 1.0f;
@@ -47,7 +47,7 @@ namespace Sample {
         return radiance;
     }
 
-    __device__ vec3 NEE_monte_carlo(const ray& r, TriangleList* world, curandState* local_rand_state) {
+    __device__ vec3 NEE_monte_carlo(const ray& r, BVH* world, curandState* local_rand_state) {
         ray cur_ray = r;
         vec3 radiance = 0.0f;
         vec3 throughput = 1.0f;

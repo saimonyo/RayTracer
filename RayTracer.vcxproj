@@ -41,13 +41,14 @@
     <ClInclude Include="src\math\vec3.cuh" />
     <ClInclude Include="src\renderer\render.cuh" />
     <ClInclude Include="src\renderer\RenderKernel.cuh" />
+    <ClInclude Include="src\scene\acceleration_structures\BVH.cuh" />
     <ClInclude Include="src\scene\Camera.cuh" />
     <ClInclude Include="src\scene\Material.cuh" />
     <ClInclude Include="src\scene\object_loader.h" />
     <ClInclude Include="src\scene\setup.cuh" />
     <ClInclude Include="src\scene\Triangle.cuh" />
     <ClInclude Include="src\scene\Scene.cuh" />
-    <ClInclude Include="src\scene\TriangleList.cuh" />
+    <ClInclude Include="src\scene\acceleration_structures\TriangleList.cuh" />
     <ClInclude Include="src\tiny_gltf\json.hpp" />
     <ClInclude Include="src\tiny_gltf\stb_image.h" />
     <ClInclude Include="src\tiny_gltf\stb_image_write.h" />

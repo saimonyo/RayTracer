@@ -7,7 +7,7 @@
 #include "../math/vec3.cuh"
 #include "../math/ray.cuh"
 #include "Triangle.cuh"
-#include "TriangleList.cuh"
+#include "acceleration_structures/TriangleList.cuh"
 #include "camera.cuh"
 #include "material.cuh"
 #include "Scene.cuh"
@@ -20,88 +20,15 @@
 
 
 
-// hard coded function to generate the cornell box scene
-// - based on data from https://www.graphics.cornell.edu/online/box/data.html
-__global__ void create_cornell(Triangle* d_list, TriangleList* hit_list, Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        int i = 0;
 
-        d_list[i++] = Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.5592f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.5592f), vec3(0.5496f, 0.0f, 0.5592f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.343f, 0.54875f, 0.227f), vec3(0.343f, 0.54875f, 0.332f), vec3(0.213f, 0.54875f, 0.332f), new lambertian(vec3(1.0f), 15.0f, vec3(1.0f)));
-        d_list[i++] = Triangle(vec3(0.343f, 0.54875f, 0.227f), vec3(0.213f, 0.54875f, 0.332f), vec3(0.213f, 0.54875f, 0.227f), new lambertian(vec3(1.0f), 15.0f, vec3(1.0f)));
-        d_list[i++] = Triangle(vec3(0.556f, 0.5488f, 0.0f), vec3(0.556f, 0.5488f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.556f, 0.5488f, 0.0f), vec3(0.0f, 0.5488f, 0.5592f), vec3(0.0f, 0.5488f, 0.0f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.5496f, 0.0f, 0.5592f), vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.5496f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.5592f), vec3(0.556f, 0.5488f, 0.5592f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.5488f, 0.0f), new lambertian(green));
-        d_list[i++] = Triangle(vec3(0.0f, 0.0f, 0.5592f), vec3(0.0f, 0.5488f, 0.0f), vec3(0.0f, 0.5488f, 0.5592f), new lambertian(green));
-        d_list[i++] = Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.5496f, 0.0f, 0.5592f), vec3(0.556f, 0.5488f, 0.5592f), new lambertian(red));
-        d_list[i++] = Triangle(vec3(0.5528f, 0.0f, 0.0f), vec3(0.556f, 0.5488f, 0.5592f), vec3(0.556f, 0.5488f, 0.0f), new lambertian(red));
-        d_list[i++] = Triangle(vec3(0.130f, 0.165f, 0.065f), vec3(0.082f, 0.165f, 0.225f), vec3(0.240f, 0.165f, 0.272f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.130f, 0.165f, 0.065f), vec3(0.240f, 0.165f, 0.272f), vec3(0.290f, 0.165f, 0.114f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.290f, 0.0f, 0.114f), vec3(0.290f, 0.165f, 0.114f), vec3(0.240f, 0.165f, 0.272f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.290f, 0.0f, 0.114f), vec3(0.240f, 0.165f, 0.272f), vec3(0.240f, 0.0f, 0.272f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.130f, 0.0f, 0.065f), vec3(0.130f, 0.165f, 0.065f), vec3(0.290f, 0.165f, 0.114f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.130f, 0.0f, 0.065f), vec3(0.290f, 0.165f, 0.114f), vec3(0.290f, 0.0f, 0.114f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.082f, 0.0f, 0.225f), vec3(0.082f, 0.165f, 0.225f), vec3(0.130f, 0.165f, 0.065f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.082f, 0.0f, 0.225f), vec3(0.130f, 0.165f, 0.065f), vec3(0.130f, 0.0f, 0.065f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.240f, 0.0f, 0.272f), vec3(0.240f, 0.165f, 0.272f), vec3(0.082f, 0.165f, 0.225f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.240f, 0.0f, 0.272f), vec3(0.082f, 0.165f, 0.225f), vec3(0.082f, 0.0f, 0.225f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.423f, 0.330f, 0.247f), vec3(0.265f, 0.330f, 0.296f), vec3(0.314f, 0.330f, 0.456f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.423f, 0.330f, 0.247f), vec3(0.314f, 0.330f, 0.456f), vec3(0.472f, 0.330f, 0.406f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.423f, 0.0f, 0.247f), vec3(0.423f, 0.330f, 0.247f), vec3(0.472f, 0.330f, 0.406f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.423f, 0.0f, 0.247f), vec3(0.472f, 0.330f, 0.406f), vec3(0.472f, 0.0f, 0.406f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.472f, 0.0f, 0.406f), vec3(0.472f, 0.330f, 0.406f), vec3(0.314f, 0.330f, 0.456f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.472f, 0.0f, 0.406f), vec3(0.314f, 0.330f, 0.456f), vec3(0.314f, 0.0f, 0.456f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.314f, 0.0f, 0.456f), vec3(0.314f, 0.330f, 0.456f), vec3(0.265f, 0.330f, 0.296f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.314f, 0.0f, 0.456f), vec3(0.265f, 0.330f, 0.296f), vec3(0.265f, 0.0f, 0.296f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.265f, 0.0f, 0.296f), vec3(0.265f, 0.330f, 0.296f), vec3(0.423f, 0.330f, 0.247f), new lambertian(white));
-        d_list[i++] = Triangle(vec3(0.265f, 0.0f, 0.296f), vec3(0.423f, 0.330f, 0.247f), vec3(0.423f, 0.0f, 0.247f), new lambertian(white));
-
-        new (hit_list) TriangleList(d_list, 32);
-
-        vec3 lookfrom(0.278f, 0.273f, -0.800f);
-        vec3 lookat(0.278f, 0.273f, -0.799f);
-
-        float dist_to_focus = length(lookfrom - vec3(0.278f, 0.273f, 0.280f));
-
-        float aperture = 0.000025f;
-
-        new (d_camera) Camera(lookfrom,
-            lookat,
-            vec3(0.0f, 1.0f, 0.0f),
-            40.0f,
-            float(nx) / float(ny),
-            aperture,
-            dist_to_focus);
-
-        new (world) Scene(hit_list, d_camera);
-    }
-}
-
-__global__ void create_model_scene(Triangle* d_list, TriangleList* hit_list,
-    Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state,
-    vec3* vertices, unsigned int* indices, size_t triangle_count) {
+__global__ void create_model_scene(Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state, BVH* d_bvh) {
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-        Material* shared_mat = new lambertian(white);
+
         Material* shiny_mat = new lambertian(vec3(1.0f), 15.0f, vec3(1.0f));
-        for (size_t i = 0; i < triangle_count; i++) {
-            unsigned int i1, i2, i3;
-            i1 = indices[3 * i + 0];
-            i2 = indices[3 * i + 1];
-            i3 = indices[3 * i + 2];
 
-            vec3 v1, v2, v3;
-            v1 = vertices[i1];
-            v2 = vertices[i2];
-            v3 = vertices[i3];
-
-            // CURRENTLY DUE TO NEE CODE SOME MATERIALS HAVE TO BE EMITTERS
-            d_list[i] = Triangle(v1, v2, v3, shiny_mat);
+        for (int i = 0; i < d_bvh->triangle_count; i++) {
+            d_bvh->triangles[i].mat_ptr = shiny_mat;
         }
-
-        new (hit_list) TriangleList(d_list, triangle_count);
 
         vec3 lookfrom(0.0f, 0.0f, 0.0f);
         vec3 lookat(0.0f, 0.0f, 1.0f);
@@ -118,7 +45,7 @@ __global__ void create_model_scene(Triangle* d_list, TriangleList* hit_list,
             aperture,
             dist_to_focus);
 
-        new (world) Scene(hit_list, d_camera);
+        new (world) Scene(d_bvh, d_camera);
     }
 }
 

@@ -24,7 +24,7 @@ bool Window::init_CUDA(std::string model_file) {
     checkCudaErrors(cudaGLSetGLDevice(device_id));
 
     if (model_file.size() == 0) {
-        init_cornell_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+        return false;
     }
     else {
         std::vector<vec3> vertices;

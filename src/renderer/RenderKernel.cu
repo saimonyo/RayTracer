@@ -109,7 +109,7 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
     float u = float(i + curand_uniform(&local_rand_state)) / float(render_width);
     float v = float(j + curand_uniform(&local_rand_state)) / float(render_height);
     Camera* cam = world->camera;
-    TriangleList* prims = world->primitives;
+    BVH* prims = world->primitives;
 
     ray r = cam->get_ray(u, v, &local_rand_state);
     vec3 new_sample = Sample::NEE_monte_carlo(r, prims, &local_rand_state);
@@ -143,45 +143,11 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
 }
 
 curandState* d_rand_state;
-TriangleList* hit_list;
+BVH* d_bvh;
 Triangle* d_list;
 Camera* d_camera;
 vec3* d_accumulation_buffer;
 Scene* d_world;
-
-__host__ void init_cornell_scene(int render_width, int render_height) {
-    const int num_hitables = 32;
-
-    int num_pixels = render_width * render_height;
-
-    // Allocate random states for pixels
-    checkCudaErrors(cudaMalloc((void**)&d_rand_state, num_pixels * sizeof(curandState)));
-
-    // Allocate random state for world generation
-    curandState* d_rand_state_world;
-    checkCudaErrors(cudaMalloc((void**)&d_rand_state_world, sizeof(curandState)));
-    rand_init << <1, 1 >> > (d_rand_state_world);
-
-    checkCudaErrors(cudaMalloc((void**)&d_accumulation_buffer, num_pixels * sizeof(vec3)));
-    checkCudaErrors(cudaMemset(d_accumulation_buffer, 0, num_pixels * sizeof(vec3)));
-
-
-    // Make our world of hitables & the camera
-    checkCudaErrors(cudaMalloc((void**)&d_list, num_hitables * sizeof(Triangle)));
-    checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(TriangleList)));
-    checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera)));
-    checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene)));
-
-    create_cornell << <1, 1 >> > (d_list, hit_list, d_camera, d_world, render_width, render_height, d_rand_state_world);
-
-    // Initialize per-pixel random states
-    dim3 blocks(render_width / 16 + 1, render_height / 16 + 1);
-    dim3 threads(16, 16);
-    render_init << <blocks, threads >> > (render_width, render_height, d_rand_state);
-
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaFree(d_rand_state_world));
-}
 
 
 __host__ void init_model_scene(int render_width, int render_height, vec3* vertices, unsigned int* indices, size_t indices_count, size_t vertices_count, size_t triangle_count) {
@@ -200,21 +166,55 @@ __host__ void init_model_scene(int render_width, int render_height, vec3* vertic
 
 
     // Make our world of hitables & the camera
-    checkCudaErrors(cudaMalloc((void**)&d_list, triangle_count * sizeof(Triangle)));
-    checkCudaErrors(cudaMalloc((void**)&hit_list, sizeof(TriangleList)));
     checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera)));
     checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene)));
 
-    vec3* d_vertices;
-    unsigned int* d_indices;
 
-    checkCudaErrors(cudaMalloc((void**)&d_vertices, vertices_count * sizeof(vec3)));
-    checkCudaErrors(cudaMalloc((void**)&d_indices, indices_count * sizeof(unsigned int)));
+    Material* shiny_mat = new lambertian(vec3(1.0f), 15.0f, vec3(1.0f));
+    Triangle* h_triangles = new Triangle[triangle_count];
 
-    checkCudaErrors(cudaMemcpy(d_vertices, vertices, vertices_count * sizeof(vec3), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpy(d_indices, indices, indices_count * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    for (size_t i = 0; i < triangle_count; i++) {
+        unsigned int i1, i2, i3;
+        i1 = indices[3 * i + 0];
+        i2 = indices[3 * i + 1];
+        i3 = indices[3 * i + 2];
 
-    create_model_scene<<<1, 1>>>(d_list, hit_list, d_camera, d_world, render_width, render_height, d_rand_state_world, d_vertices, d_indices, triangle_count);
+        vec3 v1, v2, v3;
+        v1 = vertices[i1];
+        v2 = vertices[i2];
+        v3 = vertices[i3];
+
+        // CURRENTLY DUE TO NEE CODE SOME MATERIALS HAVE TO BE EMITTERS
+        h_triangles[i] = Triangle(v1, v2, v3, shiny_mat);
+    }
+
+    BVH h_bvh = BVH(h_triangles, triangle_count);
+
+    checkCudaErrors(cudaMalloc((void**)&d_bvh, sizeof(BVH)));
+
+    uint32_t* d_indices;
+    node* d_nodes;
+
+    checkCudaErrors(cudaMalloc((void**)&d_list, triangle_count * sizeof(Triangle)));
+    checkCudaErrors(cudaMalloc((void**)&d_indices, triangle_count * sizeof(uint32_t)));
+    checkCudaErrors(cudaMalloc((void**)&d_nodes, h_bvh.nodes_in_use * sizeof(node)));
+
+    checkCudaErrors(cudaMemcpy(d_list , h_bvh.triangles, h_bvh.triangle_count * sizeof(Triangle), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_indices, h_bvh.indices, h_bvh.triangle_count * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_nodes, h_bvh.nodes, h_bvh.nodes_in_use * sizeof(node), cudaMemcpyHostToDevice));
+
+    BVH h_bvh_template;
+    h_bvh_template.triangles = d_list;
+    h_bvh_template.triangle_count = h_bvh.triangle_count;
+    h_bvh_template.indices = d_indices;
+    h_bvh_template.nodes = d_nodes;
+    h_bvh_template.node_count = h_bvh.node_count;
+    h_bvh_template.root_index = h_bvh.root_index;
+    h_bvh_template.nodes_in_use = h_bvh.nodes_in_use;
+
+    checkCudaErrors(cudaMemcpy(d_bvh, &h_bvh_template, sizeof(BVH), cudaMemcpyHostToDevice));
+
+    create_model_scene << <1, 1 >> > (d_camera, d_world, render_width, render_height, d_rand_state_world, d_bvh);
 
     // Initialize per-pixel random states
     dim3 blocks(render_width / 16 + 1, render_height / 16 + 1);
@@ -223,8 +223,6 @@ __host__ void init_model_scene(int render_width, int render_height, vec3* vertic
 
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaFree(d_rand_state_world));
-    checkCudaErrors(cudaFree(d_vertices));
-    checkCudaErrors(cudaFree(d_indices));
 }
 
 
@@ -259,7 +257,6 @@ __host__ void cleanup_scene() {
     checkCudaErrors(cudaFree(d_rand_state));
     checkCudaErrors(cudaFree(d_accumulation_buffer));
     checkCudaErrors(cudaFree(d_list));
-    checkCudaErrors(cudaFree(hit_list));
     checkCudaErrors(cudaFree(d_camera));
     checkCudaErrors(cudaFree(d_world));
 }

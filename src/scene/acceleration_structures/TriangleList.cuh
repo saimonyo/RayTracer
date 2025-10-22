@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Triangle.cuh"
+#include "../Triangle.cuh"
 
 
 class TriangleList {
