@@ -170,7 +170,7 @@ __host__ void init_model_scene(int render_width, int render_height, vec3* vertic
     checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Scene)));
 
 
-    Material* shiny_mat = new lambertian(vec3(1.0f), 15.0f, vec3(1.0f));
+    Material shiny_mat = Material(vec3(1.0f), 15.0f, vec3(1.0f));
     Triangle* h_triangles = new Triangle[triangle_count];
 
     for (size_t i = 0; i < triangle_count; i++) {
@@ -248,8 +248,6 @@ __host__ void render_frame(cudaGraphicsResource_t pbo_resource, int render_width
 
 __host__ void cleanup_scene() {
     checkCudaErrors(cudaDeviceSynchronize());
-
-    free_scene_data_kernel << <1, 1 >> > (d_list, 32);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 

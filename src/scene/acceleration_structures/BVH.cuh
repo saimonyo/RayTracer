@@ -176,7 +176,7 @@ __device__ bool BVH::hit(const ray& r, float tmin, float tmax, hit_record& rec) 
                     intersected = true;
                     closest_so_far = temp_rec.t;
                     rec = temp_rec;
-                    rec.mat_ptr = tri.mat_ptr;
+                    rec.mat_ptr = &tri.mat;
                 }
             }
 

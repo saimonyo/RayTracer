@@ -105,8 +105,8 @@ namespace Sample {
                     
                     // calculate how much light is received and what colour
                     if (mat->eval(rec, to_light, -cur_ray.direction, pdf, brdf, local_rand_state)) {
-                        Material* light_mat = random_emitter->mat_ptr;
-                        vec3 emitted_colour = light_mat->emission_colour * light_mat->emission_strength;
+                        Material light_mat = random_emitter->mat;
+                        vec3 emitted_colour = light_mat.emission_colour * light_mat.emission_strength;
 
                         radiance += throughput * brdf * emitted_colour * solid_angle;
                     }

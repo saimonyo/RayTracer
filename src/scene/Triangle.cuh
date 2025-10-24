@@ -10,10 +10,10 @@ public:
     vec3 e1, e2;
     vec3 centroid;
     vec3 n;
-    Material* mat_ptr;
+    Material mat;
 
     __host__ __device__ Triangle() {}
-    __host__ __device__ Triangle(vec3 v_1, vec3 v_2, vec3 v_3, Material* m) : v1(v_1), v2(v_2), v3(v_3), mat_ptr(m) {
+    __host__ __device__ Triangle(vec3 v_1, vec3 v_2, vec3 v_3, Material m) : v1(v_1), v2(v_2), v3(v_3), mat(m) {
         e1 = v2 - v1;
         e2 = v3 - v1;
         n = normalise(cross(e1, e2));

@@ -11,6 +11,12 @@
 #include "../tiny_gltf/tiny_gltf.h"
 #include "../math/vec3.cuh"
 
+struct HostMaterial {
+    vec3 albedo;
+    vec3 emission_colour;
+    float emission_strength;
+};
+
 #ifndef white
 #define white vec3(.82f)
 #endif
@@ -18,7 +24,7 @@
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 
-bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vector<unsigned int>& all_indices) {
+bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vector<unsigned int>& all_indices, std::vector<HostMaterial>& all_materials) {
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
     std::string err;
@@ -46,6 +52,35 @@ bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vect
         for (const auto& primitive : mesh.primitives) {
             if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
                 continue;
+            }
+
+            HostMaterial current_material; // Start with a default material
+            if (primitive.material >= 0) {
+                const tinygltf::Material& mat = model.materials[primitive.material];
+
+                // Emissive factor
+                if (mat.emissiveFactor.size() == 3) {
+                    vec3 emission = vec3(
+                        static_cast<float>(mat.emissiveFactor[0]),
+                        static_cast<float>(mat.emissiveFactor[1]),
+                        static_cast<float>(mat.emissiveFactor[2])
+                    );
+
+                    float strength = max_component(emission);
+
+                    current_material.emission_colour = emission / strength;
+                    current_material.emission_strength = strength;
+                }
+
+                // PBR metallic-roughness properties
+                const auto& pbr = mat.pbrMetallicRoughness;
+                if (pbr.baseColorFactor.size() == 4) {
+                    current_material.albedo = vec3(
+                        static_cast<float>(pbr.baseColorFactor[0]),
+                        static_cast<float>(pbr.baseColorFactor[1]),
+                        static_cast<float>(pbr.baseColorFactor[2])
+                    );
+                }
             }
 
             const auto& pos_accessor = model.accessors[primitive.attributes.at("POSITION")];

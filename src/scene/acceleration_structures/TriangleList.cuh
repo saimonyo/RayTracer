@@ -25,8 +25,8 @@ __device__ TriangleList::TriangleList(Triangle* l, int n) {
     emitters_size = 0;
 
     for (int i = 0; i < n; i++) {
-        Material* mat = list[i].mat_ptr;
-        if (mat != nullptr && mat->emission_strength > 0.0f) {
+        Material mat = list[i].mat;
+        if (mat.emission_strength > 0.0f) {
             temp[emitters_size++] = list[i];
         }
     }
@@ -47,7 +47,7 @@ __device__ bool TriangleList::hit(const ray& r, float t_min, float t_max, hit_re
             hit_anything = true;
             closest_so_far = temp_rec.t;
             rec = temp_rec;
-            rec.mat_ptr = list[i].mat_ptr;
+            rec.mat_ptr = &list[i].mat;
         }
     }
     return hit_anything;

@@ -29,8 +29,9 @@ bool Window::init_CUDA(std::string model_file) {
     else {
         std::vector<vec3> vertices;
         std::vector<unsigned int> indices;
+        std::vector<HostMaterial> materials;
 
-        if (!load_model(model_file.c_str() , vertices, indices)) {
+        if (!load_model(model_file.c_str() , vertices, indices, materials)) {
             return false;
         }
 
