@@ -40,7 +40,12 @@ bool Window::init_CUDA(std::string model_file) {
             return false;
         }
 
-        init_model_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, &vertices[0], &indices[0], indices.size(), vertices.size(), indices.size() / 3);
+        printf("%d\n", materials.size());
+        printf("%d\n", indices.size() / 3);
+
+        assert(indices.size() / 3 == materials.size());
+
+        init_model_scene(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, &vertices[0], &indices[0], indices.size(), vertices.size(), indices.size() / 3, &materials[0]);
         
         // clear host side vectors
         vertices.clear();

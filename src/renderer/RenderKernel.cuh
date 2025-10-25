@@ -11,6 +11,8 @@
 #include <ctime>
 #include <iostream>
 
+#include "../math/vec3.cuh"
+
 
 // limited version of checkCudaErrors from helper_cuda.h in CUDA examples
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
@@ -23,4 +25,4 @@ void update_camera_rotation(float yaw, float pitch, int width, int height);
 
 
 __host__ void render_frame(cudaGraphicsResource_t pbo_resource, int render_width, int render_height, int frame_number);
-__host__ void init_model_scene(int render_width, int render_height, vec3* vertices, unsigned int* indices, size_t indices_count, size_t vertices_count, size_t triangle_count);
+__host__ void init_model_scene(int render_width, int render_height, vec3* vertices, unsigned int* indices, size_t indices_count, size_t vertices_count, size_t triangle_count, HostMaterial* materials);

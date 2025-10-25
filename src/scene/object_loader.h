@@ -11,18 +11,11 @@
 #include "../tiny_gltf/tiny_gltf.h"
 #include "../math/vec3.cuh"
 
-struct HostMaterial {
-    vec3 albedo;
-    vec3 emission_colour;
-    float emission_strength;
-};
-
 #ifndef white
 #define white vec3(.82f)
 #endif
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
-
 
 bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vector<unsigned int>& all_indices, std::vector<HostMaterial>& all_materials) {
     tinygltf::Model model;
@@ -31,21 +24,15 @@ bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vect
     std::string warn;
 
     bool res = loader.LoadASCIIFromFile(&model, &err, &warn, filename);
-    if (!warn.empty()) {
-        std::cout << "WARN: " << warn << std::endl;
-    }
-
-    if (!err.empty()) {
-        std::cout << "ERR: " << err << std::endl;
-    }
-
+    if (!warn.empty()) { std::cout << "WARN: " << warn << std::endl; }
+    if (!err.empty()) { std::cout << "ERR: " << err << std::endl; }
     if (!res) {
         std::cout << "Failed to load glTF: " << filename << std::endl;
         return false;
     }
-    else {
-        std::cout << "Loaded glTF: " << filename << std::endl;
-    }
+
+    
+    HostMaterial default_material = {white, vec3(0.0f), 0.0f};
 
 
     for (const auto& mesh : model.meshes) {
@@ -54,11 +41,10 @@ bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vect
                 continue;
             }
 
-            HostMaterial current_material; // Start with a default material
+            HostMaterial current_material = default_material;
+            // get current material, default to the default matieral
             if (primitive.material >= 0) {
                 const tinygltf::Material& mat = model.materials[primitive.material];
-
-                // Emissive factor
                 if (mat.emissiveFactor.size() == 3) {
                     vec3 emission = vec3(
                         static_cast<float>(mat.emissiveFactor[0]),
@@ -67,9 +53,15 @@ bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vect
                     );
 
                     float strength = max_component(emission);
-
-                    current_material.emission_colour = emission / strength;
-                    current_material.emission_strength = strength;
+                    // prevent div by 0 error
+                    if (strength > 0.0f) {
+                        current_material.emission_colour = emission / strength;
+                        current_material.emission_strength = strength;
+                    }
+                    else {
+                        current_material.emission_colour = vec3(0.0f, 0.0f, 0.0f);
+                        current_material.emission_strength = 0.0f;
+                    }
                 }
 
                 // PBR metallic-roughness properties
@@ -92,48 +84,60 @@ bool load_model(const char* filename, std::vector<vec3>& all_vertices, std::vect
                 );
 
             size_t vertex_offset = all_vertices.size();
-
             for (size_t i = 0; i < pos_accessor.count; ++i) {
-                all_vertices.push_back(100.0f * vec3(positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]));
+                all_vertices.push_back(vec3(positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2]));
             }
 
             if (primitive.indices > -1) {
                 const auto& index_accessor = model.accessors[primitive.indices];
                 const auto& index_buffer_view = model.bufferViews[index_accessor.bufferView];
-                const auto& index_buffer = model.buffers[index_buffer_view.buffer];
+                const auto& index_buffer = model.buffers[index_accessor.bufferView];
                 const void* data_ptr = &index_buffer.data[index_buffer_view.byteOffset + index_accessor.byteOffset];
 
-                // The indices can be different types (unsigned short, int, etc.)
+
+                // add material for each triangle
                 switch (index_accessor.componentType) {
-                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
-                    const uint8_t* indices = static_cast<const uint8_t*>(data_ptr);
-                    for (size_t i = 0; i < index_accessor.count; ++i) {
-                        all_indices.push_back(indices[i] + vertex_offset);
+                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
+                        const auto* indices = static_cast<const uint8_t*>(data_ptr);
+                        for (size_t i = 0; i < index_accessor.count; i += 3) {
+                            all_indices.push_back(indices[i + 0] + vertex_offset);
+                            all_indices.push_back(indices[i + 1] + vertex_offset);
+                            all_indices.push_back(indices[i + 2] + vertex_offset);
+                            all_materials.push_back(current_material);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
-                    const uint16_t* indices = static_cast<const uint16_t*>(data_ptr);
-                    for (size_t i = 0; i < index_accessor.count; ++i) {
-                        all_indices.push_back(indices[i] + vertex_offset);
+                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
+                        const auto* indices = static_cast<const uint16_t*>(data_ptr);
+                        for (size_t i = 0; i < index_accessor.count; i += 3) {
+                            all_indices.push_back(indices[i + 0] + vertex_offset);
+                            all_indices.push_back(indices[i + 1] + vertex_offset);
+                            all_indices.push_back(indices[i + 2] + vertex_offset);
+                            all_materials.push_back(current_material);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
-                    const uint32_t* indices = static_cast<const uint32_t*>(data_ptr);
-                    for (size_t i = 0; i < index_accessor.count; ++i) {
-                        all_indices.push_back(indices[i] + vertex_offset);
+                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
+                        const auto* indices = static_cast<const uint32_t*>(data_ptr);
+                        for (size_t i = 0; i < index_accessor.count; i += 3) {
+                            all_indices.push_back(indices[i + 0] + vertex_offset);
+                            all_indices.push_back(indices[i + 1] + vertex_offset);
+                            all_indices.push_back(indices[i + 2] + vertex_offset);
+                            all_materials.push_back(current_material);
+                        }
+                        break;
                     }
-                    break;
-                }
-                default:
-                    break;
+                    default: 
+                        break;
                 }
             }
             else {
-                size_t num_vertices_in_primitive = pos_accessor.count;
-                for (size_t i = 0; i < num_vertices_in_primitive; ++i) {
-                    all_indices.push_back(i + vertex_offset);
+                size_t num_vertices = pos_accessor.count;
+                for (size_t i = 0; i < num_vertices; i += 3) {
+                    all_indices.push_back(i + 0 + vertex_offset);
+                    all_indices.push_back(i + 1 + vertex_offset);
+                    all_indices.push_back(i + 2 + vertex_offset);
+                    all_materials.push_back(current_material);
                 }
             }
         }

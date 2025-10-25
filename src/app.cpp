@@ -7,7 +7,7 @@ const int main_width = 1200;
 const int main_height = 600;
 
 int main(void) {
-    Window window = Window(vp_width, vp_height, main_width, main_height, "data/Objects/bunny/scene.gltf");
+    Window window = Window(vp_width, vp_height, main_width, main_height, "data/Objects/jinx/scene.gltf");
 
     window.main_loop(render_frame);
 }

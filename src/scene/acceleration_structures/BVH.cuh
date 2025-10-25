@@ -22,7 +22,7 @@ struct node {
     vec3 v2 = vec3(FLT_MAX);
     int left_child = -1;
     int first_index = -1;
-    uint32_t tri_count = 0;
+    size_t tri_count = 0;
 
     __host__ __device__ inline bool is_leaf() { return tri_count > 0; }
 };
@@ -31,7 +31,7 @@ struct node {
 class BVH {
 public:
     __device__ __host__ BVH() {}
-    __host__ BVH(Triangle* tris, int n);
+    __host__ BVH(Triangle* tris, size_t n);
     __host__ void build();
     __host__ void divide(uint32_t idx);
     __host__ __device__ void refit_node(uint32_t idx);
@@ -39,20 +39,20 @@ public:
     __device__ Triangle* get_random_emitter(curandState* local_rand_state) { return &triangles[0]; }
 
     Triangle* triangles;
-    int triangle_count;
+    size_t triangle_count;
 
     uint32_t* indices;
 
     node* nodes;
-    int node_count;
+    size_t node_count;
 
     uint32_t root_index = 0;
-    uint32_t nodes_in_use = 1;
+    size_t nodes_in_use = 1;
 };
 
 
 
-__host__ BVH::BVH(Triangle* tris, int n) {
+__host__ BVH::BVH(Triangle* tris, size_t n) {
     triangles = tris;
     triangle_count = n;
     node_count = 2 * n - 1;
@@ -83,7 +83,7 @@ __host__ __device__ void BVH::refit_node(uint32_t idx) {
     n.v2 = vec3(-FLT_MAX);
 
     uint32_t first = n.first_index;
-    for (int i = 0; i < n.tri_count; i++) {
+    for (size_t i = 0; i < n.tri_count; i++) {
         Triangle& tri = triangles[indices[first + i]];
         n.v1 = min(n.v1, tri.v1);
         n.v1 = min(n.v1, tri.v2);
@@ -115,8 +115,8 @@ __host__ void BVH::divide(uint32_t idx) {
 
     float split = n.v1[axis] + dimensions[axis] * 0.5f;
 
-    uint32_t i = n.first_index;
-    uint32_t j = i + n.tri_count - 1;
+    size_t i = n.first_index;
+    size_t j = i + n.tri_count - 1;
 
     while (i <= j) {
         if (triangles[indices[i]].centroid[axis] < split) {

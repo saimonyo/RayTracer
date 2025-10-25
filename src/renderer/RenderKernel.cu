@@ -112,7 +112,7 @@ __global__ void render(unsigned char* ptr, int render_width, int render_height, 
     BVH* prims = world->primitives;
 
     ray r = cam->get_ray(u, v, &local_rand_state);
-    vec3 new_sample = Sample::NEE_monte_carlo(r, prims, &local_rand_state);
+    vec3 new_sample = Sample::naive_monte_carlo(r, prims, &local_rand_state);
 
     // get old value in the buffer
     vec3 old_render = accum_buffer[pixel_index];
@@ -150,7 +150,7 @@ vec3* d_accumulation_buffer;
 Scene* d_world;
 
 
-__host__ void init_model_scene(int render_width, int render_height, vec3* vertices, unsigned int* indices, size_t indices_count, size_t vertices_count, size_t triangle_count) {
+__host__ void init_model_scene(int render_width, int render_height, vec3* vertices, unsigned int* indices, size_t indices_count, size_t vertices_count, size_t triangle_count, HostMaterial* materials) {
     int num_pixels = render_width * render_height;
 
     // Allocate random states for pixels
@@ -184,8 +184,11 @@ __host__ void init_model_scene(int render_width, int render_height, vec3* vertic
         v2 = vertices[i2];
         v3 = vertices[i3];
 
-        // CURRENTLY DUE TO NEE CODE SOME MATERIALS HAVE TO BE EMITTERS
-        h_triangles[i] = Triangle(v1, v2, v3, shiny_mat);
+        Material mat;
+        mat.emission_colour = materials[i].emission_colour;
+        mat.emission_strength = materials[i].emission_strength;
+        mat.albedo = materials[i].albedo;
+        h_triangles[i] = Triangle(v1, v2, v3, mat);
     }
 
     BVH h_bvh = BVH(h_triangles, triangle_count);

@@ -218,3 +218,10 @@ __host__ __device__ inline float min_component(const vec3& v) {
 __host__ __device__ inline float max_component(const vec3& v) {
     return fmaxf(v.x, fmaxf(v.y, v.z));
 }
+
+
+struct HostMaterial {
+    vec3 albedo;
+    vec3 emission_colour;
+    float emission_strength;
+};

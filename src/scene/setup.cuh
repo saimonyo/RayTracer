@@ -24,14 +24,8 @@
 __global__ void create_model_scene(Camera* d_camera, Scene* world, int nx, int ny, curandState* rand_state, BVH* d_bvh) {
     if (threadIdx.x == 0 && threadIdx.y == 0) {
 
-        Material shiny_mat = Material(vec3(1.0f), 15.0f, vec3(1.0f));
-
-        for (int i = 0; i < d_bvh->triangle_count; i++) {
-            d_bvh->triangles[i].mat = shiny_mat;
-        }
-
-        vec3 lookfrom(0.0f, 0.0f, 0.0f);
-        vec3 lookat(0.0f, 0.0f, 1.0f);
+        vec3 lookfrom(0.0f, 0.0f, 10.0f);
+        vec3 lookat(0.0f, 0.0f, 0.0f);
 
         float dist_to_focus = 1;
 
