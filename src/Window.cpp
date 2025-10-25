@@ -353,7 +353,7 @@ void Window::main_loop(std::function<void(cudaGraphicsResource_t, int, int, int)
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-        frame_number++;
+        frame_number++;   
     }
 
     // destructor handles clean up

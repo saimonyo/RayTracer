@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "../Triangle.cuh"
 
 // Bounding Volume Hierachy
@@ -36,10 +37,13 @@ public:
     __host__ void divide(uint32_t idx);
     __host__ __device__ void refit_node(uint32_t idx);
     __device__ bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
-    __device__ Triangle* get_random_emitter(curandState* local_rand_state) { return &triangles[0]; }
+    __device__ Triangle* get_random_emitter(curandState* local_rand_state);
 
     Triangle* triangles;
     size_t triangle_count;
+
+    size_t* emitters_indices;
+    size_t emitters_size = 0;
 
     uint32_t* indices;
 
@@ -61,8 +65,15 @@ __host__ BVH::BVH(Triangle* tris, size_t n) {
     nodes = new node[node_count];
     indices = new uint32_t[n];
 
-    for (int i = 0; i < n; i++) {
+    emitters_indices = new size_t[n];
+
+    for (size_t i = 0; i < n; i++) {
         indices[i] = i;
+
+        Material mat = tris[i].mat;
+        if (max_component(mat.emission_colour * mat.emission_strength) > 0) {
+            emitters_indices[emitters_size++] = i;
+        }
     }
 
     build();
@@ -130,7 +141,13 @@ __host__ void BVH::divide(uint32_t idx) {
 
     int left_count = i - n.first_index;
     if (left_count == 0 || left_count == n.tri_count) {
-        return;
+        // force a split
+        left_count = n.tri_count / 2;
+        i = n.first_index + left_count;
+
+        if (left_count == 0) {
+            return;
+        }
     }
 
     uint32_t left_idx = nodes_in_use++;
@@ -152,7 +169,8 @@ __host__ void BVH::divide(uint32_t idx) {
 __device__ bool BVH::hit(const ray& r, float tmin, float tmax, hit_record& rec) const {
     float t = AABBIntersection(nodes[root_index].v1, nodes[root_index].v2, r);
 
-    if (t == FLT_MAX) {
+
+    if (t >= 3e8f) {
         return false;
     }
 
@@ -160,7 +178,7 @@ __device__ bool BVH::hit(const ray& r, float tmin, float tmax, hit_record& rec) 
     hit_record temp_rec;
 
     node* n = &nodes[root_index];
-    node* stack[200];
+    node* stack[32];
 
     uint32_t stack_ptr = 0;
 
@@ -197,7 +215,7 @@ __device__ bool BVH::hit(const ray& r, float tmin, float tmax, hit_record& rec) 
         float t2 = AABBIntersection(right->v1, right->v2, r);
 
         if (t1 <= t2) {
-            if (t1 == FLT_MAX || t1 > closest_so_far) {
+            if (t1 >= 3e8f || t1 > closest_so_far) {
                 if (stack_ptr == 0) {
                     break;
                 }
@@ -213,7 +231,7 @@ __device__ bool BVH::hit(const ray& r, float tmin, float tmax, hit_record& rec) 
             }
         }
         else {
-            if (t2 == FLT_MAX || t2 > closest_so_far) {
+            if (t2 >= 3e8f || t2 > closest_so_far) {
                 if (stack_ptr == 0) {
                     break;
                 }
@@ -230,4 +248,10 @@ __device__ bool BVH::hit(const ray& r, float tmin, float tmax, hit_record& rec) 
         }
     }
     return intersected;
+}
+
+__device__ Triangle* BVH::get_random_emitter(curandState* local_rand_state) {
+    assert(emitters_size > 0);
+    int rand_idx = curand(local_rand_state) % emitters_size;
+    return &triangles[emitters_indices[rand_idx]];
 }

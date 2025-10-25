@@ -197,14 +197,17 @@ __host__ void init_model_scene(int render_width, int render_height, vec3* vertic
 
     uint32_t* d_indices;
     node* d_nodes;
+    size_t* d_emitters_indices;
 
     checkCudaErrors(cudaMalloc((void**)&d_list, triangle_count * sizeof(Triangle)));
     checkCudaErrors(cudaMalloc((void**)&d_indices, triangle_count * sizeof(uint32_t)));
     checkCudaErrors(cudaMalloc((void**)&d_nodes, h_bvh.nodes_in_use * sizeof(node)));
+    checkCudaErrors(cudaMalloc((void**)&d_emitters_indices, h_bvh.emitters_size * sizeof(size_t)));
 
     checkCudaErrors(cudaMemcpy(d_list , h_bvh.triangles, h_bvh.triangle_count * sizeof(Triangle), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_indices, h_bvh.indices, h_bvh.triangle_count * sizeof(uint32_t), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_nodes, h_bvh.nodes, h_bvh.nodes_in_use * sizeof(node), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_emitters_indices, h_bvh.emitters_indices, h_bvh.emitters_size * sizeof(size_t), cudaMemcpyHostToDevice));
 
     BVH h_bvh_template;
     h_bvh_template.triangles = d_list;
@@ -214,10 +217,12 @@ __host__ void init_model_scene(int render_width, int render_height, vec3* vertic
     h_bvh_template.node_count = h_bvh.node_count;
     h_bvh_template.root_index = h_bvh.root_index;
     h_bvh_template.nodes_in_use = h_bvh.nodes_in_use;
+    h_bvh_template.emitters_indices = d_emitters_indices;
+    h_bvh_template.emitters_size = h_bvh.emitters_size;
 
     checkCudaErrors(cudaMemcpy(d_bvh, &h_bvh_template, sizeof(BVH), cudaMemcpyHostToDevice));
 
-    create_model_scene << <1, 1 >> > (d_camera, d_world, render_width, render_height, d_rand_state_world, d_bvh);
+    create_model_scene<<<1, 1 >>>(d_camera, d_world, render_width, render_height, d_rand_state_world, d_bvh);
 
     // Initialize per-pixel random states
     dim3 blocks(render_width / 16 + 1, render_height / 16 + 1);
@@ -240,7 +245,7 @@ __host__ void render_frame(cudaGraphicsResource_t pbo_resource, int render_width
     // Render the scene
     dim3 blocks(render_width / 16 + 1, render_height / 16 + 1);
     dim3 threads(16, 16);
-    render << <blocks, threads >> > (devPtr, render_width, render_height, d_world, d_rand_state, frame_number, d_accumulation_buffer);
+    render<<<blocks, threads>>>(devPtr, render_width, render_height, d_world, d_rand_state, frame_number, d_accumulation_buffer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
